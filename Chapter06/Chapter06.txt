@@ -1,0 +1,359 @@
+The null hypothesis significance testing framework
+
+
+> pbinom(10, size=30, prob=.5)
+[1] 0.04936857
+
+
+
+
+
+One and two-tailed tests
+
+> binom.test(10,30)
+Exact binomial test
+data: 10 and 30
+number of successes = 10, number of trials = 30, p-value = 0.09874
+alternative hypothesis: true probability of success is not equal to
+0.5
+95 percent confidence interval:
+0.1728742 0.5281200
+sample estimates:
+probability of success
+0.3333333
+
+
+
+
+
+> binom.test(10,30, alternative="less")
+Exact binomial test
+data: 10 and 30
+number of successes = 10, number of trials = 30, p-value = 0.04937
+alternative hypothesis: true probability of success is less than 0.5
+95 percent confidence interval:
+0.0000000 0.4994387
+sample estimates:
+probability of success
+0.3333333
+
+
+
+
+
+
+
+Testing the mean of one sample
+
+
+> head(precip)
+Mobile Juneau Phoenix Little Rock Los Angeles
+67.0 54.7 7.0 48.5 14.0
+Sacramento
+17.2
+
+
+
+
+
+> is.vector(precip)
+[1] TRUE
+> mean(precip)
+[1] 34.88571
+
+
+
+
+
+
+> # function to compute t-statistic
+t.statistic <- function(thesample, thepopulation){
+numerator <- mean(thesample) - mean(thepopulation)
+denominator <- sd(thesample) / sqrt(length(thesample))
+t.stat <- numerator / denominator
+return(t.stat)
+}
+# make the pretend population normally distributed
+# with a mean of 38
+population.precipitation <- rnorm(100000, mean=38)
+t.stats <- numeric(10000)
+for(i in 1:10000){
+a.sample <- sample(population.precipitation, 70)
+t.stats[i] <- t.statistic(a.sample, population.precipitation)
+}
+# plot
+library(ggplot2)
+tmpdata <- data.frame(vals=t.stats)
+qplot(vals, data=tmpdata, geom="histogram",
+	color=I("white"),
+	xlab="sampling distribution of t-statistic",
+	ylab="frequency")
+
+
+
+
+
+
+> t.statistic(precip, population.precipitation)
+[1] -1.901225
+
+
+
+
+
+
+qt(.025, df=69)
+[1] -1.994945
+# the critical region is less than -1.995 and more than +1.995
+
+
+
+
+
+> t.test(precip, mu=38)
+One Sample t-test
+data: precip
+t = -1.901, df = 69, p-value = 0.06148
+alternative hypothesis: true mean is not equal to 38
+95 percent confidence interval:
+31.61748 38.15395
+sample estimates:
+mean of x
+34.88571
+
+
+
+
+
+
+
+
+
+> t.test(precip, mu=38, alternative="less")
+One Sample t-test
+data: precip
+t = -1.901, df = 69, p-value = 0.03074
+alternative hypothesis: true mean is less than 38
+95 percent confidence interval:
+-Inf 37.61708
+sample estimates:
+mean of x
+34.88571
+
+
+
+
+
+
+
+Testing two means
+
+> mean(mtcars$mpg[mtcars$am==0])
+[1] 17.14737
+> mean(mtcars$mpg[mtcars$am==1])
+[1] 24.39231
+> mtcars.copy <- mtcars
+> # make new column with better labels
+> mtcars.copy$transmission <- ifelse(mtcars$am==0,
++ "auto", "manual")
+> mtcars.copy$transmission <- factor(mtcars.copy$transmission)
+
+> qplot(transmission, mpg, data=mtcars.copy,
++ geom="boxplot", fill=transmission) +
++ # no legend
++ guides(fill=FALSE)
+
+
+
+
+
+
+> automatic.mpgs <- mtcars$mpg[mtcars$am==0]
+> manual.mpgs <- mtcars$mpg[mtcars$am==1]
+> t.test(automatic.mpgs, manual.mpgs, alternative="less")
+Welch Two Sample t-test
+data: automatic.mpgs and manual.mpgs
+t = -3.7671, df = 18.332, p-value = 0.0006868
+alternative hypothesis: true difference in means is less than 0
+95 percent confidence interval:
+-Inf -3.913256
+sample estimates:
+mean of x mean of y
+17.14737 24.39231
+> # p < .05. Yipee!
+
+
+
+
+
+
+
+
+> t.test(mpg ~ am, data=mtcars, alternative="less")
+
+
+
+
+
+> set.seed(16)
+> t.test(rnorm(1000000,mean=10), rnorm(1000000, mean=10))
+Welch Two Sample t-test
+data: rnorm(1e+06, mean = 10) and rnorm(1e+06, mean = 10)
+t = -2.1466, df = 1999998, p-value = 0.03183
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+-0.0058104638 -0.0002640601
+sample estimates:
+mean of x mean of y
+9.997916 10.000954
+
+
+
+
+
+
+
+
+> install.packages("effsize")
+> library(effsize)
+> cohen.d(automatic.mpgs, manual.mpgs)
+Cohen's d
+d estimate: -1.477947 (large)
+95 percent confidence interval:
+inf sup
+-2.3372176 -0.6186766
+
+
+
+
+
+
+Testing more than two means
+
+> library(car)
+> head(WeightLoss)
+group wl1 wl2 wl3 se1 se2 se3
+1 Control 4 3 3 14 13 15
+2 Control 4 4 3 13 14 17
+3 Control 4 3 1 17 12 16
+4 Control 3 2 1 11 11 12
+5 Control 5 3 2 16 15 14
+6 Control 6 5 4 17 18 18
+> table(WeightLoss$group)
+Control Diet DietEx
+12 12 10
+
+
+
+
+
+> qplot(group, wl2, data=WeightLoss, geom="boxplot", fill=group)
+
+
+
+
+
+> the.anova <- aov(wl2 ~ group, data=WeightLoss)
+> summary(the.anova)
+Df Sum Sq Mean Sq F value Pr(>F)
+group 2 45.28 22.641 13.37 6.49e-05 ***
+Residuals 31 52.48 1.693
+—
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+
+
+
+
+pairwise.t.test(WeightLoss$wl2, as.vector(WeightLoss$group))
+Pairwise comparisons using t tests with pooled SD
+data: WeightLoss$wl2 and as.vector(WeightLoss$group)
+Control Diet
+Diet 0.28059 -
+DietEx 7.1e-05 0.00091
+P value adjustment method: holm
+
+
+
+
+
+
+
+Testing independence of proportions
+
+> # The chi-square test function takes a cross-tabulation
+> # which UCBAdmissions already is. I am converting it from
+> # and back so that you, dear reader, can learn how to do
+> # this with other data that isn't already in cross-tabulation
+> # form
+> ucba <- as.data.frame(UCBAdmissions)
+> head(ucba)
+Admit Gender Dept Freq
+1 Admitted Male A 512
+2 Rejected Male A 313
+3 Admitted Female A 89
+4 Rejected Female A 19
+5 Admitted Male B 353
+6 Rejected Male B 207
+> # create cross-tabulation
+> cross.tab <- xtabs(Freq ~ Gender+Admit, data=ucba)
+>
+> chisq.test(cross.tab)
+Pearson's Chi-squared test with Yates' continuity correction
+data: cross.tab
+X-squared = 91.6096, df = 1, p-value < 2.2e-16
+
+
+
+
+
+
+What if my assumptions are unfounded?
+
+> library(car)
+> qqPlot(mtcars$mpg)
+
+
+
+
+> shapiro.test(mtcars$mpg)
+Shapiro-Wilk normality test
+data: mtcars$mpg
+W = 0.9476, p-value = 0.1229
+
+
+
+
+
+> # I'm repeating the set-up
+> library(car)
+> the.anova <- aov(wl2 ~ group, data=WeightLoss)
+> shapiro.test(the.anova$residuals)
+Shapiro-Wilk normality test
+data: the.anova$residuals
+W = 0.9694, p-value = 0.4444
+
+
+
+
+
+
+> wilcox.test(automatic.mpgs, manual.mpgs)
+	Wilcoxon rank sum test with continuity correction
+data: automatic.mpgs and manual.mpgs
+W = 42, p-value = 0.001871
+alternative hypothesis: true location shift is not equal to 0
+
+
+
+
+
+
+kruskal.test(wl2 ~ group, data=WeightLoss)
+	Kruskal-Wallis rank sum test
+data: wl2 by group
+Kruskal-Wallis chi-squared = 14.7474, df = 2, p-value = 0.0006275
+
+
+

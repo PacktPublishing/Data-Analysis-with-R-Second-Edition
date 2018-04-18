@@ -1,0 +1,772 @@
+Arithmetic and assignment
+
+
+> 2 + 2
+[1] 4
+> 9 / 3
+[1] 3
+> 5 %% 2 # modulus operator (remainder of 5 divided by 2)
+[1] 1
+
+
+
+
+
+
+> 3 + 2 - 10 ^ 2 # ^ is the exponent operator
+[1] -95
+> 3 + (2 - 10) ^ 2
+[1] 67
+
+
+
+
+
+> # assignments follow the form VARIABLE <- VALUE
+> var <- 10
+> var
+[1] 10
+> var ^ 2
+[1] 100
+> VAR / 2 # variable names are case-sensitive
+Error: object 'VAR' not found
+
+
+
+
+
+> var # var is 10
+[1] 10
+> var ^ 2
+[1] 100
+> var # var is still 10
+[1] 10
+> var <- var ^ 2 # no return value
+> var # var is now 100
+[1] 100
+
+
+
+
+> cos(3.14159) # cosine function
+[1] -1
+> cos(pi) # pi is a constant that R provides
+[1] -1
+> acos(-1) # arccosine function
+[1] 3.141593
+> acos(cos(pi)) + 10
+[1] 13.14159
+> # functions can be used as arguments to other functions
+
+
+
+
+> 1 / 0
+[1] Inf
+> 0 / 0
+[1] NaN
+
+
+
+
+
+Logicals and characters
+
+> foo <- TRUE # foo is of the logical data type
+> class(foo) # class() tells us the type
+[1] "logical"
+> bar <- "hi!" # bar is of the character data type
+> class(bar)
+[1] "character"
+
+
+
+
+
+> foo
+[1] TRUE
+> foo && TRUE # boolean and
+[1] TRUE
+> foo && FALSE
+[1] FALSE
+> foo || FALSE # boolean or
+[1] TRUE
+> !foo # negation operator
+[1] FALSE
+
+
+
+
+
+> foo && 1
+[1] TRUE
+> foo && 2
+[1] TRUE
+> foo && 0
+[1] FALSE
+
+
+
+
+
+> 4 < 2 # less than operator
+[1] FALSE
+> 4 >= 4 # greater than or equal to
+[1] TRUE
+> 3 == 3 # equality operator
+[1] TRUE
+> 3 != 2 # inequality operator
+[1] TRUE
+
+
+
+
+
+> lang.domain <- "statistics"
+> lang.domain <- toupper(lang.domain)
+> print(lang.domain)
+[1] "STATISTICS"
+> # retrieves substring from first character to fourth character
+> substr(lang.domain, 1, 4)
+[1] "STAT"
+> gsub("I", "1", lang.domain) # substitutes every "I" for "1"
+[1] "STAT1ST1CS"
+> # combines character strings
+> paste("R does", lang.domain, "!!!")
+[1] "R does STATISTICS !!!"
+
+
+
+
+
+Flow of control
+
+> if(2 + 2 == 4)
++ print("very good")
+[1] "very good"
+> if(2 + 2 == 5)
++ print("all hail to the thief")
+
+
+
+
+
+> if((4/2==2) && (2*2==4)){
++ print("four divided by two is two...")
++ print("and two times two is four")
++ }
+[1] "four divided by two is two..."
+[1] "and two times two is four"
+
+
+
+
+
+> closing.time <- TRUE
+> if(closing.time){
++ print("you don't have to go home")
++ print("but you can't stay here")
++ } else{
++ print("you can stay here!")
++ }
+[1] "you don't have to go home"
+[1] "but you can't stay here"
+> if(!closing.time){
++ print("you don't have to go home")
++ print("but you can't stay here")
++ } else{
++ print("you can stay here!")
++ }
+[1] "you can stay here!"
+
+
+
+
+
+Vectors
+
+> our.vect <- c(8, 6, 7, 5, 3, 0, 9)
+> our.vect
+[1] 8 6 7 5 3 0 9
+
+
+
+
+
+> another.vect <- c("8", 6, 7, "-", 3, "0", 9)
+> another.vect
+[1] "8" "6" "7" "-" "3" "0" "9"
+
+
+
+
+
+Subsetting
+
+> our.vect[1] # to get the first value
+[1] 8
+> # the function length() returns the length of a vector
+> length(our.vect)
+[1] 7
+> our.vect[length(our.vect)] # get the last element of a vector
+[1] 9
+
+
+
+
+
+> our.vect[10]
+[1] NA
+
+
+
+
+
+
+> # extract the first, third, fifth, and
+> # seventh element from our vector
+> our.vect[c(1, 3, 5, 7)]
+[1] 8 7 3 9
+
+
+
+
+
+> other.vector <- 1:10
+> other.vector
+[1] 1 2 3 4 5 6 7 8 9 10
+> another.vector <- seq(50, 30, by=-2)
+> another.vector
+[1] 50 48 46 44 42 40 38 36 34 32 30
+
+
+
+
+
+> our.vect[1:5]
+[1] 8 6 7 5 3
+
+
+
+
+
+Vectorized functions
+
+> # takes the mean of a vector
+> mean(our.vect)
+[1] 5.428571
+> sd(our.vect) # standard deviation
+[1] 3.101459
+> min(our.vect)
+[1] 0
+> max(1:10)
+[1] 10
+> sum(c(1, 2, 3))
+[1] 6
+
+
+
+
+
+> messy.vector <- c(8, 6, NA, 7, 5, NA, 3, 0, 9)
+> messy.vector
+[1] 8 6 NA 7 5 NA 3 0 9
+> length(messy.vector)
+[1] 9
+
+
+
+
+
+> mean(messy.vector)
+[1] NA
+> mean(messy.vector, na.rm=TRUE)
+[1] 5.428571
+> sum(messy.vector, na.rm=FALSE)[1] NA
+> sum(messy.vector, na.rm=TRUE)
+[1] 38
+
+
+
+
+
+> log.vector <- c(TRUE, TRUE, FALSE)
+> log.vector
+[1] TRUE TRUE FALSE
+
+
+
+
+
+> sum(log.vector)
+[1] 2
+
+
+
+
+
+> messy.vector
+[1] 8 6 NA 7 5 NA 3 0 9
+> is.na(messy.vector)
+[1] FALSE FALSE TRUE FALSE FALSE TRUE FALSE FALSE FALSE
+> # 8 6 NA 7 5 NA 3 0 9
+
+
+
+
+
+
+> sum(is.na(messy.vector))
+[1] 2
+
+
+
+
+
+
+> our.vect > 5
+[1] TRUE TRUE TRUE FALSE FALSE FALSE TRUE
+
+
+
+
+
+> sum(our.vect > 5)
+[1] 4
+
+
+
+
+
+Advanced subsetting
+
+> messy.vector[!is.na(messy.vector)]
+[1] 8 6 7 5 3 0 9
+
+
+
+
+
+> our.vect[our.vect > 5]
+[1] 8 6 7 9
+
+
+
+
+
+> our.vect
+[1] 8 6 7 5 3 0 9
+> our.vect[1] <- 9
+> our.vect
+[1] 9 6 7 5 3 0 9
+
+
+
+
+
+
+> messy.vector[is.na(messy.vector)] <- 0
+> messy.vector
+[1] 8 6 0 7 5 0 3 0 9
+
+
+
+
+
+
+> ifelse(is.na(messy.vector), 0, messy.vector)
+[1] 8 6 0 7 5 0 3 0 9
+
+
+
+
+
+Recycling
+
+> our.vect + 3
+[1] 12 9 10 8 6 3 12
+
+
+
+
+
+
+> our.vect + 3
+[1] 12 9 10 8 6 3 12
+
+
+
+
+
+> our.vect + c(3, 3, 3, 3, 3, 3, 3)
+[1] 12 9 10 8 6 3 12
+
+
+
+
+
+> our.vect[c(TRUE, FALSE)]
+[1] 9 7 3 9
+
+
+
+
+
+> our.vect[c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE)]
+[1] 9 7 3 9
+
+
+
+
+
+> our.vect + c(3, 0)
+[1] 12 6 10 5 6 0 12
+Warning message:
+In our.vect + c(3, 0) :
+longer object length is not a multiple of shorter object length
+
+
+
+
+
+
+Functions
+
+> function.name <- function(argument1, argument2, ...){
++ # some functionality
++ }
+
+
+
+
+> is.even <- function(a.number){
++ remainder <- a.number %% 2
++ if(remainder==0)
++ return(TRUE)
++ return(FALSE)
++ }
+> # testing it
+> is.even(10)
+[1] TRUE
+> is.even(9)
+[1] FALSE
+
+
+
+
+
+
+> is.divisible.by <- function(large.number, smaller.number){
++ if(large.number %% smaller.number != 0)
++ return(FALSE)
++ return(TRUE)
++ }
+> # testing it
+> is.divisible.by(10, 2)
+[1] TRUE
+> is.divisible.by(10, 3)
+[1] FALSE
+> is.divisible.by(9, 3)
+[1] TRUE
+
+
+
+
+
+> is.even <- function(num){
++ is.divisible.by(num, 2)
++ }
+
+
+
+
+
+> sapply(our.vect, is.even)
+[1] FALSE TRUE FALSE FALSE FALSE TRUE FALSE
+
+
+
+
+
+
+
+> sapply(our.vect, function(num){is.divisible.by(num, 3)})
+[1] TRUE TRUE FALSE FALSE TRUE TRUE TRUE
+
+
+
+
+
+
+> where.even <- sapply(our.vect, is.even)
+> where.div.3 <- sapply(our.vect, function(num){
++ is.divisible.by(num, 3)})
+> # "&" is like the "&&" and operator but for vectors
+> our.vect[where.even & where.div.3]
+[1] 6 0
+
+
+
+
+
+
+Matrices
+
+> a.matrix <- matrix(c(1, 2, 3, 4, 5, 6))
+> a.matrix
+[,1]
+[1,] 1
+[2,] 2
+[3,] 3
+[4,] 4
+[5,] 5
+[6,] 6
+
+
+
+
+
+
+> a.matrix <- matrix(c(1, 2, 3, 4, 5, 6), ncol=2)
+> a.matrix
+[,1] [,2]
+[1,] 1 4
+[2,] 2 5
+[3,] 3 6
+
+
+
+
+
+
+> a2.matrix <- cbind(c(1, 2, 3), c(4, 5, 6))
+
+
+
+
+
+> a3.matrix <- rbind(c(1, 2, 3), c(4, 5, 6))
+> a3.matrix
+[,1] [,2] [,3]
+[1,] 1 2 3
+[2,] 4 5 6
+
+
+
+
+
+> t(a2.matrix)
+
+
+
+
+
+> a2.matrix
+[,1] [,2]
+[1,] 1 4
+[2,] 2 5
+[3,] 3 6
+> colSums(a2.matrix)
+[1] 6 15
+> rowMeans(a2.matrix)
+[1] 2.5 3.5 4.5
+
+
+
+
+
+> apply(a2.matrix, 2, sum)
+[1] 6 15
+> apply(a2.matrix, 1, mean)
+[1] 2.5 3.5 4.5
+
+
+
+
+
+
+> a2.matrix %*% a2.matrix
+Error in a2.matrix %*% a2.matrix : non-conformable arguments
+
+
+
+
+
+
+
+> a2.matrix
+[,1] [,2]
+[1,] 1 4
+[2,] 2 5
+[3,] 3 6
+> a3.matrix
+[,1] [,2] [,3]
+[1,] 1 2 3
+[2,] 4 5 6
+> a2.matrix %*% a3.matrix
+[,1] [,2] [,3]
+[1,] 17 22 27
+[2,] 22 29 36
+[3,] 27 36 45
+> # dim() tells us how many rows and columns
+> # (respectively) there are in the given matrix
+> dim(a2.matrix)
+[1] 3 2
+
+
+
+
+
+
+> a2.matrix[2,1]
+[1] 2
+
+
+
+
+
+
+> # returns the whole second column
+a2.matrix[,2]
+[1] 4 5 6
+> # returns the first row
+> a2.matrix[1,]
+[1] 1 4
+
+
+
+
+
+
+> # give me element in column 2 at the first and third row
+> a2.matrix[c(1, 3), 2]
+[1] 4 6
+
+
+
+
+
+
+Loading data into R
+
+flavor,number
+pistachio,6
+mint chocolate chip,7
+vanilla,5
+chocolate,10
+strawberry,2
+neopolitan,4
+
+
+
+
+
+
+> favs <- read.table("favorites.txt", sep=",", header=TRUE)
+
+
+
+
+
+
+> favs <- read.table(file.choose(), sep=",", header=TRUE)
+
+
+
+
+
+
+> favs <- read.csv("favorites.txt")
+
+
+
+
+
+> head(favs)
+flavor number
+1 pistachio 6
+2 mint chocolate chip 7
+3 vanilla 5
+4 chocolate 10
+5 strawberry 2
+6 neopolitan 4
+> class(favs)
+[1] "data.frame"
+> class(favs$flavor)
+[1] "factor"
+> class(favs$number)
+[1] "numeric"
+
+
+
+
+
+
+
+> favs <- read.csv("favorites.txt", stringsAsFactors=FALSE)
+> class(favs$flavor)
+[1] "character"
+
+
+
+
+
+> favs$flavor
+[1] "pistachio" "mint chocolate chip" "vanilla"
+[4] "chocolate" "strawberry" "neopolitan"
+> favs[["flavor"]]
+[1] "pistachio" "mint chocolate chip" "vanilla"
+[4] "chocolate" "strawberry" "neopolitan"
+> favs[,1]
+[1] "pistachio" "mint chocolate chip" "vanilla"
+[4] "chocolate" "strawberry" "neopolitan"
+
+
+
+
+
+
+
+
+> names(favs)
+[1] "flavor" "number"
+> names(favs)[1] <- "flav"
+> names(favs)
+[1] "flav" "number"
+
+
+
+
+
+
+> str(favs)
+'data.frame': 6 obs. of 2 variables:
+$ flav : chr "pistachio" "mint chocolate chip" "vanilla"
+"chocolate" ...
+$ number: num 6 7 5 10 2 4
+
+
+
+
+
+Working with packages
+
+> # downloads and installs from CRAN
+> install.packages("ggplot2")
+
+
+
+
+
+> library(ggplot2)
+> ggplot(favs, aes(x=flav, y=number)) +
++ geom_bar(stat="identity") +
++ ggtitle("Soy ice cream flavor preferences")
+
+
+
+
+
+
+
+

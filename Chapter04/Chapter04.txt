@@ -1,0 +1,22 @@
+The binomial distribution
+
+pbinom(10, size=30, prob=.5)
+[1] 0.04936857
+
+
+
+The normal distribution
+
+
+> f <- function(x){ dnorm(x, mean=65, sd=3.5) }
+> integrate(f, 70, Inf)
+0.07656373 with absolute error < 2.2e-06
+
+
+
+> pnorm(70, mean=65, sd=3.5)
+[1] 0.9234363
+
+
+
+

@@ -1,0 +1,368 @@
+Simple linear regression
+
+
+plot(mpg ~ wt, data=mtcars)
+
+
+
+
+model <- lm(mpg ~ wt, data=mtcars)
+
+
+
+
+abline(model)
+
+
+
+
+
+summary(model)
+Call:
+lm(formula = mpg ~ wt, data = mtcars)
+Residuals:
+Min 1Q Median 3Q Max
+-4.5432 -2.3647 -0.1252 1.4096 6.8727
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept) 37.2851 1.8776 19.858 < 2e-16 ***
+wt -5.3445 0.5591 -9.559 1.29e-10 ***
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 3.046 on 30 degrees of freedom
+Multiple R-squared: 0.7528, Adjusted R-squared: 0.7446
+F-statistic: 91.38 on 1 and 30 DF, p-value: 1.294e-10
+
+
+
+
+
+
+
+predict(model, newdata=data.frame(wt=6))
+1
+5.218297
+
+
+
+
+
+
+
+Simple linear regression with a binary predictor
+
+model <- lm(mpg ~ am, data=mtcars)
+summary(model)
+Call:
+lm(formula = mpg ~ am, data = mtcars)
+Residuals:
+Min 1Q Median 3Q Max
+-9.3923 -3.0923 -0.2974 3.2439 9.5077
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept) 17.147 1.125 15.247 1.13e-15 ***
+am 7.245 1.764 4.106 0.000285 ***
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 4.902 on 30 degrees of freedom
+Multiple R-squared: 0.3598, Adjusted R-squared: 0.3385
+F-statistic: 16.86 on 1 and 30 DF, p-value: 0.000285
+mean(mtcars$mpg[mtcars$am==0])
+[1] 17.14737
+(mean(mtcars$mpg[mtcars$am==1]) -
+mean(mtcars$mpg[mtcars$am==0]))
+[1] 7.244939
+
+
+
+
+
+
+
+# use var.equal to choose Students t-test
+# over Welch's t-test
+t.test(mpg ~ am, data=mtcars, var.equal=TRUE)
+Two Sample t-test
+data: mpg by am
+t = -4.1061, df = 30, p-value = 0.000285
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+-10.84837 -3.64151
+sample estimates:
+mean in group 0 mean in group 1
+17.14737 24.39231
+
+
+
+
+
+
+
+
+
+mtcars$automatic <- ifelse(mtcars$am==0, "yes", "no")
+model <- lm(mpg ~ factor(automatic), data=mtcars)
+model
+Call:
+lm(formula = mpg ~ factor(automatic), data = mtcars)
+Coefficients:
+(Intercept) factor(automatic)yes
+24.392 -7.245
+
+
+
+
+
+
+
+
+
+
+
+
+A word of warning
+
+
+library(MASS)
+data(anscombe)
+plot(y3 ~ x3, data=anscombe)
+abline(lm(y3 ~ x3, data=anscombe),
+col="blue", lty=2, lwd=2)
+abline(rlm(y3 ~ x3, data=anscombe),
+col="red", lty=1, lwd=2)
+
+
+
+
+
+
+Multiple regression
+
+model <- lm(mpg ~ wt + hp, data=mtcars)
+summary(model)
+
+Call:
+lm(formula = mpg ~ wt + hp, data = mtcars)
+Residuals:
+Min 1Q Median 3Q Max
+-3.941 -1.600 -0.182 1.050 5.854
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept) 37.22727 1.59879 23.285 < 2e-16 ***
+wt -3.87783 0.63273 -6.129 1.12e-06 ***
+hp -0.03177 0.00903 -3.519 0.00145 **
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 2.593 on 29 degrees of freedom
+Multiple R-squared: 0.8268, Adjusted R-squared: 0.8148
+F-statistic: 69.21 on 2 and 29 DF, p-value: 9.109e-12
+
+
+
+
+
+
+
+
+coef(lm(mpg ~ wt + hp, data=mtcars))
+(Intercept) wt hp
+37.22727012 -3.87783074 -0.03177295
+coef(lm(mpg ~ wt, data=mtcars))
+(Intercept) wt
+37.285126 -5.344472
+coef(lm(mpg ~ hp, data=mtcars))
+(Intercept) hp
+30.09886054 -0.06822828
+
+
+
+
+
+
+
+
+predict(model, newdata = data.frame(wt=2.5, hp=275))
+1
+18.79513
+
+
+
+
+
+
+Regression with a non-binary predictor
+
+# the dataset is in the car package
+library(car)
+model <- lm(wl2 ~ factor(group), data=WeightLoss)
+summary(model)
+Call:
+lm(formula = wl2 ~ factor(group), data = WeightLoss)
+Residuals:
+Min 1Q Median 3Q Max
+-2.100 -1.054 -0.100 0.900 2.900
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept) 3.3333 0.3756 8.874 5.12e-10 ***
+factor(group)Diet 0.5833 0.5312 1.098 0.281
+factor(group)DietEx 2.7667 0.5571 4.966 2.37e-05 ***
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 1.301 on 31 degrees of freedom
+Multiple R-squared: 0.4632, Adjusted R-squared: 0.4285
+F-statistic: 13.37 on 2 and 31 DF, p-value: 6.494e-05
+
+
+
+
+
+
+
+Kitchen sink regression
+
+# the period after the squiggly denotes all other variables
+model <- lm(mpg ~ ., data=mtcars)
+summary(model)
+Call:
+lm(formula = mpg ~ ., data = mtcars)
+Residuals:
+Min 1Q Median 3Q Max
+-3.4506 -1.6044 -0.1196 1.2193 4.6271
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept) 12.30337 18.71788 0.657 0.5181
+cyl -0.11144 1.04502 -0.107 0.9161
+disp 0.01334 0.01786 0.747 0.4635
+hp -0.02148 0.02177 -0.987 0.3350
+drat 0.78711 1.63537 0.481 0.6353
+wt -3.71530 1.89441 -1.961 0.0633 .
+qsec 0.82104 0.73084 1.123 0.2739
+vs 0.31776 2.10451 0.151 0.8814
+am 2.52023 2.05665 1.225 0.2340
+gear 0.65541 1.49326 0.439 0.6652
+carb -0.19942 0.82875 -0.241 0.8122
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 2.65 on 21 degrees of freedom
+Multiple R-squared: 0.869, Adjusted R-squared: 0.8066
+F-statistic: 13.93 on 10 and 21 DF, p-value: 3.793e-07
+
+
+
+
+
+
+Cross-validation
+
+set.seed(1)
+train.indices <- sample(1:nrow(mtcars), nrow(mtcars)/2)
+training <- mtcars[train.indices,]
+testing <- mtcars[-train.indices,]
+model <- lm(mpg ~ ., data=training)
+summary(model)
+..... (output truncated)
+Residual standard error: 1.188 on 5 degrees of freedom
+Multiple R-squared: 0.988, Adjusted R-squared: 0.9639
+F-statistic: 41.06 on 10 and 5 DF, p-value: 0.0003599
+
+
+
+
+mean((predict(model) - training$mpg) ^ 2)
+[1] 0.4408109
+# Cool, but how does it perform on the validation set?
+mean((predict(model, newdata=testing) - testing$mpg) ^ 2)
+[1] 337.9995
+
+
+
+
+
+simpler.model <- lm(mpg ~ am + wt, data=training)
+mean((predict(simpler.model) - training$mpg) ^ 2)
+[1] 9.396091
+mean((predict(simpler.model, newdata=testing) - testing$mpg) ^ 2)
+[1] 12.70338
+
+
+
+
+
+
+
+library(boot)
+bad.model <- glm(mpg ~ ., data=mtcars)
+better.model <- glm(mpg ~ am + wt + qsec, data=mtcars)
+bad.cv.err <- cv.glm(mtcars, bad.model, K=5)
+# the cross-validated MSE estimate we will be using
+# is a bias-corrected one stored as the second element
+# in the 'delta' vector of the cv.err object
+bad.cv.err$delta[2]
+[1] 14.92426
+
+better.cv.err <- cv.glm(mtcars, better.model, K=5)
+better.cv.err$delta[2]
+[1] 7.944148
+
+
+
+
+
+
+Linear regression diagnostics
+
+my.model <- lm(mpg ~ wt, data=mtcars)
+plot(my.model)
+
+
+
+
+
+Fourth Anscombe relationship
+
+model <- lm(mpg ~ am + wt + qsec, data=mtcars)
+library(car)
+vif(model)
+
+am wt qsec
+
+
+
+
+
+
+Advanced topics
+
+install.packages("glmnet")
+library(glmnet)
+vignette("glmnet_beta")
+
+
+
+
+my.model <- lm(relief ~ soma*juice, data=my.data)
+
+
+
+
+
+
+2.541437 2.482952 1.364339
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

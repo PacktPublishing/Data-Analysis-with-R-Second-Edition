@@ -1,0 +1,365 @@
+Multivariate data
+
+head(airquality)
+Ozone Solar.R Wind Temp Month Day
+1     41   190  7.4  67   5   1
+2     36   118  8.0  72   5   2
+3     12   149 12.6  74   5   3
+4     18   313 11.5  62   5   4
+5     NA   NA  14.3  56   5   5
+6     28   NA  14.9  66   5   6
+
+
+
+
+
+
+Relationships between a categorical and continuous variable
+
+head(iris)
+Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1 5.1 3.5 1.4 0.2 setosa
+2 4.9 3.0 1.4 0.2 setosa
+3 4.7 3.2 1.3 0.2 setosa
+4 4.6 3.1 1.5 0.2 setosa
+5 5.0 3.6 1.4 0.2 setosa
+6 5.4 3.9 1.7 0.4 setosa
+
+
+
+
+
+
+
+
+
+
+
+mean(iris$Petal.Length)
+[1] 3.758
+
+
+
+
+
+
+mean(iris$Petal.Length[iris$Species=="setosa"])
+[1] 1.462
+mean(iris$Petal.Length[iris$Species=="versicolor"])
+[1] 4.26
+mean(iris$Petal.Length[iris$Species=="virginica"])
+[1] 5.552
+
+
+
+
+
+
+by(iris$Petal.Length, iris$Species, mean)
+iris$Species: setosa
+[1] 1.462
+--------------------------------------------
+iris$Species: versicolor
+[1] 4.26
+--------------------------------------------
+iris$Species: virginica
+[1] 5.552
+
+
+
+
+
+
+
+
+
+by(iris$Petal.Length, iris$Species, sd)
+
+
+
+
+
+
+
+by(iris$Petal.Length, iris$Species, summary)
+iris$Species: setosa
+Min. 1st Qu. Median Mean 3rd Qu. Max.
+1.000 1.400 1.500 1.462 1.575 1.900
+------------------------------------------------
+iris$Species: versicolor
+Min. 1st Qu. Median Mean 3rd Qu. Max.
+3.00 4.00 4.35 4.26 4.60 5.10
+------------------------------------------------
+iris$Species: virginica
+Min. 1st Qu. Median Mean 3rd Qu. Max.
+4.500 5.100 5.550 5.552 5.875 6.900
+
+
+
+
+
+
+
+by(airquality$Temp, airquality$Month, mean)
+airquality$Month: 5
+[1] 65.54839
+---------------------------------------------
+airquality$Month: 6
+[1] 79.1
+---------------------------------------------
+airquality$Month: 7
+[1] 83.90323
+---------------------------------------------
+airquality$Month: 8
+[1] 83.96774
+---------------------------------------------
+airquality$Month: 9
+[1] 76.9
+
+
+
+
+
+
+
+
+Relationships between two categorical variables
+
+ucba <- data.frame(UCBAdmissions)
+head(ucba)
+Admit Gender Dept Freq
+1 Admitted Male A 512
+2 Rejected Male A 313
+3 Admitted Female A 89
+4 Rejected Female A 19
+5 Admitted Male B 353
+6 Rejected Male B 207
+
+
+
+
+
+# the first argument to xtabs (the formula) should
+# be read as: frequency *by* Gender and Admission
+cross <- xtabs(Freq ~ Gender+Admit, data=ucba)
+cross
+Admit
+Gender Admitted Rejected
+Male 1198 1493
+Female 557 1278
+
+
+
+
+
+
+prop.table(cross, 1)
+Admit
+Gender Admitted Rejected
+Male 0.4451877 0.5548123
+Female 0.3035422 0.6964578
+
+
+
+
+
+cross2 <- xtabs(Freq ~ Gender + Admit, data=ucba[ucba$Dept=="A",])
+prop.table(cross2, 1)
+Admit
+Gender Admitted Rejected
+Male 0.6206061 0.3793939
+Female 0.8240741 0.1759259
+
+
+
+
+
+
+The relationship between two continuous variables
+
+head(women)
+height weight
+1 58 115
+2 59 117
+3 60 120
+4 61 123
+5 62 126
+6 63 129
+nrow(women)
+[1] 15
+
+
+
+
+
+
+Covariance
+
+cov(women$weight, women$height)
+[1] 69
+# the order we put the two columns in
+# the arguments doesn't matter
+cov(women$height, women$weight)
+[1] 69
+
+
+
+
+
+
+
+
+# there are 2.54 centimeters in each inch
+# changing the units to centimeters increases
+# the variability within the height variable
+cov(women$height*2.54, women$weight)
+[1] 175.26
+
+
+
+
+
+
+Correlation coefficients
+
+cor(women$height, women$weight)
+[1] 0.9954948
+cor(women$height*2.54, women$weight)
+[1] 0.9954948
+
+
+
+
+
+
+xs <- 1:100
+cor(xs, xs+100)
+[1] 1
+cor(xs, xs^3)
+[1] 0.917552
+
+
+
+
+
+
+
+xs <- 1:100
+cor(xs, xs+100, method="spearman")
+[1] 1
+cor(xs, xs^3, method="spearman")
+[1] 1
+
+
+
+
+
+cor(mtcars$wt, mtcars$mpg)
+[1] -0.8676594
+
+
+
+
+
+
+cor(airquality$Temp, airquality$Wind)
+[1] -0.4579879
+cor(airquality$Temp, airquality$Wind, method="spearman")
+[1] -0.4465408
+
+
+
+
+
+# have to drop 5th column (species is not numeric)
+iris.nospecies <- iris[, -5]
+cor(iris.nospecies)
+Sepal.Length Sepal.Width Petal.Length Petal.Width
+Sepal.Length 1.0000000 -0.1175698 0.8717538 0.8179411
+Sepal.Width -0.1175698 1.0000000 -0.4284401 -0.3661259
+Petal.Length 0.8717538 -0.4284401 1.0000000 0.9628654
+Petal.Width 0.8179411 -0.3661259 0.9628654 1.0000000
+
+
+
+
+
+
+
+Categorical and continuous variables
+
+library(ggplot)
+qplot(Species, Petal.Length, data=iris, geom="boxplot",
+fill=Species)
+
+
+
+
+
+qplot(Petal.Length, data=iris, geom="density", alpha=I(.7),
+fill=Species)
+
+
+
+
+
+Two categorical variables
+
+
+install.packages("vcd")
+library(vcd)
+ucba <- data.frame(UCBAdmissions)
+mosaic(Freq ~ Gender + Admit, data=ucba,
+shade=TRUE, legend=FALSE)
+
+
+
+
+
+mosaic(Freq ~ Gender+Admit, data=ucba[ucba$Dept=="A",],
+shade=TRUE, legend=FALSE)
+
+
+
+
+
+
+
+Two continuous variables
+
+
+qplot(height, weight, data=women, geom="point")
+
+
+
+
+qplot(wt, mpg, data=mtcars, geom=c("point", "smooth"),
+method="lm", se=FALSE)
+
+
+
+
+
+qplot(wt, mpg, data=mtcars, geom=c("point", "smooth"), se=FALSE)
+
+
+
+
+
+More than two continuous variables
+
+install.packages("corrgram")
+library(corrgram)
+corrgram(iris, lower.panel=panel.conf, upper.panel=panel.pts)
+
+
+
+
+corrgram(iris, lower.panel=panel.pie, upper.panel=panel.pts,
+diag.panel=panel.density,
+main=paste0("corrgram of petal and sepal ",
+"measurements in iris data set"))
+
+
+
+

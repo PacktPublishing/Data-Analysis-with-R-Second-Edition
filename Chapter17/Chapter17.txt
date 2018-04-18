@@ -1,0 +1,320 @@
+RStudio
+
+library(ggplot2)
+nothing <- data.frame(a=rbinom(1000, 20, .5),
+b=c("red", "white"),
+c=rnorm(1000, mean=100, sd=10))
+qplot(c, data=nothing, geom="histogram")
+write.csv(nothing, "nothing.csv")
+Execute the statements one by one. Notice that
+
+
+
+Running R scripts
+
+
+R CMD BATCH nothing.R
+
+R --vanilla CMD BATCH nothing.R
+
+Rscript nothing.R
+
+Rscript --vanilla nothing.R
+
+
+
+
+
+An example script
+
+#!/usr/bin/Rscript --vanilla
+###########################################################
+## ##
+## nyc-sat-scores.R ##
+## ##
+## Author: Tony Fischetti ##
+## tony.fischetti@gmail.com ##
+## ##
+###########################################################
+##
+## Aim: to use Bayesian analysis to compare NYC's 2010
+## combined SAT scores against the average of the
+## rest of the country, which, according to
+## FairTest.com, is 1509
+##
+# workspace cleanup
+rm(list=ls())
+# options
+options(echo=TRUE)
+options(stringsAsFactors=FALSE)
+# libraries
+library(assertr) # for data checking
+library(runjags) # for MCMC
+# make sure everything is all set with JAGS
+testjags()
+# yep!
+## read data file
+# data was retrieved from NYC Open Data portal
+# direct link:
+https://data.cityofnewyork.us/api/views/zt9s-n5aj/rows.csv?accessType=DOWNL
+OAD
+nyc.sats <- read.csv("./data/SAT_Scores_NYC_2010.csv")
+# let's give the columns easier names
+better.names <- c("id", "school.name", "n", "read.mean",
+"math.mean", "write.mean")
+names(nyc.sats) <- better.names
+# there are 460 rows but almost 700 NYC schools
+# we will *assume*, then, that this is a random
+# sample of NYC schools
+# let's first check the veracity of this data...
+#nyc.sats <- assert(nyc.sats, is.numeric,
+# n, read.mean, math.mean, write.mean)
+# It looks like check failed because there are "s"s for some
+# rows. (??) A look at the data set descriptions indicates
+# that the "s" is for schools # with 5 or fewer students.
+# For our purposes, let's just exclude them.
+# This is a function that takes a vector, replaces all "s"s
+# with NAs and make coverts all non-"s"s into numerics
+remove.s <- function(vec){
+ifelse(vec=="s", NA, vec)
+}
+nyc.sats$n <- as.numeric(remove.s(nyc.sats$n))
+nyc.sats$read.mean <- as.numeric(remove.s(nyc.sats$read.mean))
+nyc.sats$math.mean <- as.numeric(remove.s(nyc.sats$math.mean))
+nyc.sats$write.mean <- as.numeric(remove.s(nyc.sats$write.mean))
+# Remove schools with fewer than 5 test takers
+nyc.sats <- nyc.sats[complete.cases(nyc.sats), ]
+# Calculate a total combined SAT score
+nyc.sats$combined.mean <- (nyc.sats$read.mean +
+nyc.sats$math.mean +
+nyc.sats$write.mean)
+# Let's build a posterior distribution of the true mean
+# of NYC high schools' combined SAT scores.
+# We're not going to look at the summary statistics, because
+# we don't want to bias our priors
+# Specify a standard gaussian model
+the.model <- "
+model {
+# priors
+mu ~ dunif(0, 2400)
+stddev ~ dunif(0, 500)
+tau <- pow(stddev, -2)
+# likelihood
+for(i in 1:theLength){
+samp[i] ~ dnorm(mu, tau)
+}
+}"
+the.data <- list(
+samp = nyc.sats$combined.mean,
+theLength = length(nyc.sats$combined.mean)
+)
+results <- autorun.jags(the.model, data=the.data,
+n.chains = 3,
+monitor = c('mu', 'stddev'))
+# View the results of the MCMC
+print(results)
+# Plot the MCMC diagnostics
+plot(results, plot.type=c("histogram", "trace"), layout=c(2,1))
+# Looks good!
+# Let's extract the MCMC samples of the mean and get the
+# bounds of the middle 95%
+results.matrix <- as.matrix(results$mcmc)
+mu.samples <- results.matrix[,'mu']
+bounds <- quantile(mu.samples, c(.025, .975))
+# We are 95% sure that the true mean is between 1197 and 1232
+# Now let's plot the marginal posterior distribution for the mean
+# of the NYC high schools' combined SAT grades and draw the 95%
+# percent credible interval.
+plot(density(mu.samples),
+main=paste("Posterior distribution of mean combined SAT",
+"score in NYC high schools (2010)", sep="\n"))
+lines(c(bounds[1], bounds[2]), c(0, 0), lwd=3, col="red")
+# Given the results, the SAT scores for NYC high schools in 2010
+# are *incontrovertibly* not at par with the average SAT scores of
+# the nation.
+
+
+
+
+
+Scripting and reproducibility
+
+> devtools::session_info()
+Session info ---------------------------------
+setting value
+version R version 3.2.1 (2015-06-18)
+system x86_64, darwin13.4.0
+ui RStudio (0.99.486)
+language (EN)
+collate en_US.UTF-8
+tz America/New_York
+date 1969-07-20
+Packages -------------------------------------
+package * version date source
+assertr * 1.0.0 2015-06-26 CRAN (R 3.2.1)
+coda 0.17-1 2015-03-03 CRAN (R 3.2.0)
+devtools 1.9.1 2015-09-11 CRAN (R 3.2.0)
+digest 0.6.8 2014-12-31 CRAN (R 3.2.0)
+lattice 0.20-33 2015-07-14 CRAN (R 3.2.0)
+memoise 0.2.1 2014-04-22 CRAN (R 3.2.0)
+modeest 2.1 2012-10-15 CRAN (R 3.2.0)
+
+
+rjags 3-15 2015-04-15 CRAN (R 3.2.0)
+runjags * 2.0.2-8 2015-09-14 CRAN (R 3.2.0)
+
+
+
+
+
+
+
+R projects
+
+read.csv("/Users/bensisko/Desktop/SAT_Scores_NYC_2010.csv")
+
+
+#!/usr/bin/Rscript --vanilla
+source("./code/load-and-clean-sat-data.R")
+source("./code/analyze-sat-data.R")
+
+
+
+
+Communicating results
+
+
+---
+title: "NYC SAT Scores Analysis"
+author: "Tony Fischetti"
+date: "November 1, 2015"
+output: html_document
+---
+#### Aim:
+To use Bayesian analysis to compare NYC's 2010
+combined SAT scores against the average of the
+rest of the country, which, according to
+FairTest.com, is 1509
+```{r, echo=FALSE}
+# options
+options(echo=TRUE)
+options(stringsAsFactors=FALSE)
+```
+We are going to use the `assertr` and `runjags`
+packages for data checking and MCMC, respectively.
+```{r}
+# libraries
+library(assertr) # for data checking
+library(runjags) # for MCMC
+```
+Let's make sure everything is all set with JAGS!
+```{r}
+testjags()
+...
+
+Great!
+This data was found in the NYC Open Data Portal:
+https://nycopendata.socrata.com
+```{r}
+link.to.data <-
+"http://data.cityofnewyork.us/api/views/zt9s-n5aj/rows.csv?accessType=DOWNL
+OAD"
+download.file(link.to.data, "./data/SAT_Scores_NYC_2010.csv")
+nyc.sats <- read.csv("./data/SAT_Scores_NYC_2010.csv")
+```
+Let's give the columns easier names
+```{r}
+better.names <- c("id", "school.name", "n", "read.mean",
+"math.mean", "write.mean")
+names(nyc.sats) <- better.names
+```
+There are `r nrow(nyc.sats)` rows but almost 700 NYC schools. We will,
+therefore, *assume* that this is a random sample of NYC schools.
+Let's first check the veracity of this data...
+```{r, error=TRUE}
+nyc.sats <- assert(nyc.sats, is.numeric,
+n, read.mean, math.mean, write.mean)
+```
+It looks like check failed because there are "s"s for some rows. (??)
+A look at the data set descriptions indicates that the "s" is for schools
+with 5 or fewer students. For our purposes, let's just exclude them.
+This is a function that takes a vector, replaces all "s"s
+with NAs and make coverts all non-"s"s into numerics
+```{r}
+remove.s <- function(vec){
+ifelse(vec=="s", NA, vec)
+}
+nyc.sats$n <- as.numeric(remove.s(nyc.sats$n))
+nyc.sats$read.mean <- as.numeric(remove.s(nyc.sats$read.mean))
+nyc.sats$math.mean <- as.numeric(remove.s(nyc.sats$math.mean))
+nyc.sats$write.mean <- as.numeric(remove.s(nyc.sats$write.mean))
+
+
+
+Now we are going to remove schools with fewer than 5 test takers
+and calculate a combined SAT score
+```{r}
+nyc.sats <- nyc.sats[complete.cases(nyc.sats), ]
+# Calculate a total combined SAT score
+nyc.sats$combined.mean <- (nyc.sats$read.mean +
+nyc.sats$math.mean +
+nyc.sats$write.mean)
+```
+Let's now build a posterior distribution of the true mean of NYC high
+schools' combined SAT scores. We're not going to look at the summary
+statistics, because we don't want to bias our priors.
+We will use a standard gaussian model.
+```{r, cache=TRUE, results="hide", warning=FALSE, message=FALSE}
+the.model <- "
+model {
+# priors
+mu ~ dunif(0, 2400)
+stddev ~ dunif(0, 500)
+tau <- pow(stddev, -2)
+# likelihood
+for(i in 1:theLength){
+samp[i] ~ dnorm(mu, tau)
+}
+}"
+the.data <- list(
+samp = nyc.sats$combined.mean,
+theLength = length(nyc.sats$combined.mean)
+)
+results <- autorun.jags(the.model, data=the.data,
+n.chains = 3,
+monitor = c('mu'))
+```
+Let's view the results of the MCMC.
+```{r}
+print(results)
+```
+Now let's plot the MCMC diagnostics
+```{r, message=FALSE}
+plot(results, plot.type=c("histogram", "trace"), layout=c(2,1))
+
+Looks good!
+Let's extract the MCMC samples of the mean, and get the
+bounds of the middle 95%
+```{r}
+results.matrix <- as.matrix(results$mcmc)
+mu.samples <- results.matrix[,'mu']
+bounds <- quantile(mu.samples, c(.025, .975))
+```
+We are 95% sure that the true mean is between
+`r round(bounds[1], 2)` and `r round(bounds[2], 2)`.
+Now let's plot the marginal posterior distribution for the mean
+of the NYC high schools' combined SAT grades, and draw the 95%
+percent credible interval.
+```{r}
+plot(density(mu.samples),
+main=paste("Posterior distribution of mean combined SAT",
+"score in NYC high schools (2010)", sep="\n"))
+lines(c(bounds[1], bounds[2]), c(0, 0), lwd=3, col="red")
+```
+Given the results, the SAT scores for NYC high schools in 2010
+are **incontrovertibly** not at par with the average SAT scores of
+the nation.
+------------------------------------
+This is some session information for reproducibility:
+```{r}
+devtools::session_info()

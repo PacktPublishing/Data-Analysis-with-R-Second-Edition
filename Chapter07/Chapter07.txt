@@ -1,0 +1,278 @@
+The big idea behind Bayesian analysis
+
+
+> curve(dbeta(x, 70, 60), # plot a beta distribution
++ xlab="?", # name x-axis
++ ylab="posterior belief", # name y-axis
++ type="l", # make smooth line
++ yaxt='n') # remove y axis labels
+> abline(v=.5, lty=2) # make line at theta = 0.5
+
+
+
+
+Who cares about coin flips
+
+
+> curve(dbeta(x, 37, 5), xlab="?",
++ ylab="posterior belief",
++ type="l", yaxt='n')
+
+
+
+
+> samp <- rbeta(10000, 37, 5)
+> quantile(samp, c(.025, .975))
+2.5% 97.5%
+0.7674591 0.9597010
+
+
+
+
+> # horizontal line
+> lines(c(.767, .96), c(0.1, 0.1))
+> # tiny vertical left boundary
+> lines(c(.767, .769), c(0.15, 0.05))
+> # tiny vertical right boundary
+> lines(c(.96, .96), c(0.15, 0.05))
+
+
+
+
+
+
+Using JAGS and runjags
+
+> install.packages(c("rjags", "runjags", "modeest"))
+
+
+
+
+> library(runjags)
+> testjags()
+You are using R version 3.2.1 (2015-06-18) on a unix machine,
+with the RStudio GUI
+The rjags package is installed
+JAGS version 3.4.0 found successfully using the command
+'/usr/local/bin/jags'
+
+
+
+
+
+
+our.model <- "model {
+# likelihood function
+numSuccesses ~ dbinom(successProb, numTrials)
+# prior
+successProb ~ dbeta(1, 1)
+# parameter of interest
+theta <- numSuccesses / numTrials
+}"
+
+
+
+
+
+
+
+> numSuccesses ~ dbinom(successProb, numTrials)
+
+
+
+
+
+our.data <- list(
+numTrials = 40,
+successProb = 36/40
+)
+
+
+
+
+
+
+
+
+> results <- autorun.jags(our.model,
++ data=our.data,
++ n.chains = 3,
++ monitor = c('theta'))
+
+
+
+
+
+> plot(results,
++ plot.type=c("histogram", "trace"),
++ layout=c(2,1))
+
+
+
+
+
+> # mcmc samples are stored in mcmc attribute
+> # of results variable
+> results.matrix <- as.matrix(results$mcmc)
+>
+> # extract the samples for 'theta'
+> # the only column, in this case
+> theta.samples <- results.matrix[,'theta']
+>
+> plot(density(theta.samples, adjust=5))
+
+
+
+
+
+
+
+
+> quantile(theta.samples, c(.025, .975))
+2.5% 97.5%
+0.800 0.975
+> lines(c(.8, .975), c(0.1, 0.1))
+> lines(c(.8, .8), c(0.15, 0.05))
+> lines(c(.975, .975), c(0.15, 0.05))
+
+
+
+
+
+
+Fitting distributions the Bayesian way
+
+the.model <- "
+model {
+mu ~ dunif(0, 60) # prior
+stddev ~ dunif(0, 30) # prior
+tau <- pow(stddev, -2)
+for(i in 1:theLength){
+samp[i] ~ dnorm(mu, tau) # likelihood function
+}
+}"
+
+
+
+
+
+
+the.data <- list(
+samp = precip,
+theLength = length(precip)
+)
+
+
+
+
+> results <- autorun.jags(the.model,
++ data=the.data,
++ n.chains = 3,
++ # now we care about two parameters
++ monitor = c('mu', 'stddev'))
+
+
+
+
+> plot(results,
++ plot.type=c("histogram", "trace"),
++ layout=c(2,2))
+
+
+
+
+
+
+> results.matrix <- as.matrix(results$mcmc)
+>
+> library(MASS)
+> # we need to make a kernel density
+> # estimate of the 3-d surface
+
+> z <- kde2d(results.matrix[,'mu'],
++ results.matrix[,'stddev'],
++ n=50)
+>
+> plot(results.matrix)
+> contour(z, drawlabels=FALSE,
++ nlevels=11, col=rainbow(11),
++ lwd=3, add=TRUE)
+
+
+
+
+
+> print(results)
+
+JAGS model summary statistics from 30000 samples (chains = 3; adapt+burnin
+= 5000):
+Lower95 Median Upper95 Mean SD Mode
+mu 31.645 34.862 38.181 34.866 1.6639 34.895
+stddev 11.669 13.886 16.376 13.967 1.2122 13.773
+MCerr MC%ofSD SSeff AC.10 psrf
+mu 0.012238 0.7 18484 0.002684 1.0001
+stddev 0.0093951 0.8 16649 -0.0053588 1.0001
+Total time taken: 5 seconds
+
+
+
+
+
+
+
+The Bayesian independent samples t-test
+
+
+the.model <- "
+model {
+# each group will have a separate mu
+# and standard deviation
+for(j in 1:2){
+mu[j] ~ dunif(0, 60) # prior
+stddev[j] ~ dunif(0, 20) # prior
+tau[j] <- pow(stddev[j], -2)
+}
+for(i in 1:theLength){
+# likelihood function
+y[i] ~ dnorm(mu[x[i]], tau[x[i]])
+}
+}"
+
+
+
+
+
+
+the.data <- list(
+y = mtcars$mpg,
+# 'x' needs to start at 1 so
+# 1 is now automatic and 2 is manual
+x = ifelse(mtcars$am==1, 1, 2),
+theLength = nrow(mtcars)
+)
+
+
+
+
+
+
+
+> results <- autorun.jags(the.model,
++ data=the.data,
++ n.chains = 3,
++ monitor = c('mu', 'stddev'))
+
+
+
+
+
+
+> results.matrix <- as.matrix(results$mcmc)
+> difference.in.means <- (results.matrix[,1] -
++ results.matrix[,2])
+
+
+
+
+
+

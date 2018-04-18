@@ -1,0 +1,617 @@
+Allocation of memory
+
+
+set.seed(1)
+all.us.women <- rnorm(10000, mean=65, sd=3.5)
+means.of.our.samples.bad <- c(1)
+# I'm increasing the number of
+# samples to 30,000 to prove a point
+for(i in 1:30000){
+a.sample <- sample(all.us.women, 40)
+means.of.our.samples.bad[i] <- mean(a.sample)
+}
+
+
+
+means.of.our.samples.bad <- c(1)
+system.time(
+for(i in 1:30000){
+a.sample <- sample(all.us.women, 40)
+means.of.our.samples.bad[i] <- mean(a.sample)
+}
+)
+means.of.our.samples.good <- numeric(30000)
+system.time(
+for(i in 1:30000){
+a.sample <- sample(all.us.women, 40)
+means.of.our.samples[i] <- mean(a.sample)
+}
+)
+-------------------------------------
+user system elapsed
+2.024 0.431 2.465
+user system elapsed
+0.678 0.004 0.684
+
+
+
+
+
+
+
+
+Vectorization
+
+system.time(
+for(i in 1:length(all.us.women))
+all.us.women[i] ^ 2
+)
+--------------------------
+user system elapsed
+0.003 0.000 0.003
+
+
+
+
+
+
+
+system.time(
+sapply(all.us.women, function(x) x^2)
+)
+-----------------------
+user system elapsed
+0.006 0.000 0.006
+
+
+
+
+
+
+
+
+
+
+> system.time(
++ vapply(all.us.women, function(x) x^2, numeric(1))
++ )
+-------------------------
+user system elapsed
+0.006 0.000 0.005
+
+
+
+
+
+
+
+
+
+
+system.time(
+all.us.women ^ 2
+)
+----------------------
+user system elapsed
+0 0 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Getting started with parallel R
+
+
+# You don't have to install this if your copy of R is new
+library(parallel)
+
+
+library(parallel)
+cl <- makeCluster(4)
+
+
+detectCores()
+------------------------
+[1] 4
+
+
+
+
+for(i in 1:4){
+Sys.sleep(5)
+}
+Or, equivalently, using lapply:
+# lapply will pass each element of the
+# vector c(1, 2, 3, 4) to the function
+# we write but we'll ignore it
+lapply(1:4, function(i) Sys.sleep(5))
+
+
+
+
+
+system.time(
+lapply(1:4, function(i) Sys.sleep(5))
+)
+----------------------------------------
+user system elapsed
+0.059 0.074 20.005
+
+
+
+
+
+
+
+
+#######################
+# NON-WINDOWS VERSION #
+#######################
+system.time(
+mclapply(1:4, function(i) Sys.sleep(5), mc.cores=4)
+)
+###################
+# WINDOWS VERSION #
+###################
+system.time(
+parLapply(cl, 1:4, function(i) Sys.sleep(5))
+)
+----------------------------------------
+user system elapsed
+0.021 0.042 5.013
+
+
+
+
+
+
+
+
+
+
+An example of (some) substance
+
+
+
+
+haversine <- function(lat1, long1, lat2, long2, unit="km"){
+radius <- 6378 # radius of Earth in kilometers
+delta.phi <- to.radians(lat2 - lat1)
+delta.lambda <- to.radians(long2 - long1)
+phi1 <- to.radians(lat1)
+phi2 <- to.radians(lat2)
+term1 <- sin(delta.phi/2) ^ 2
+term2 <- cos(phi1) * cos(phi2) * sin(delta.lambda/2) ^ 2
+the.terms <- term1 + term2
+delta.sigma <- 2 * atan2(sqrt(the.terms), sqrt(1-the.terms))
+distance <- radius * delta.sigma
+if(unit=="km") return(distance)
+if(unit=="miles") return(0.621371*distance)
+
+
+
+
+
+to.radians <- function(degrees){
+degrees * pi / 180
+}
+
+
+
+
+
+
+set.seed(1)
+the.url <-
+"http://opendata.socrata.com/api/views/rxrh-4cxm/rows.csv?accessType=DOWNLO
+AD"
+all.airport.locs <- read.csv(the.url, stringsAsFactors=FALSE)
+library(magrittr)
+library(assertr)
+CHECKS <- . %>%
+verify(nrow(.) == 13429) %>%
+verify(names(.) %in% c("locationID", "Latitude", "Longitude")) %>%
+assert(within_bounds(0, 90), Latitude) %>%
+assert(within_bounds(0,180), Longitude)
+all.airport.locs <- CHECKS(all.airport.locs)
+# Let's start off with 400 airports
+smp.size <- 400
+# choose a random sample of airports
+random.sample <- sample((1:nrow(all.airport.locs)), smp.size)
+airport.locs <- all.airport.locs[random.sample, ]
+row.names(airport.locs) <- NULL
+head(airport.locs)
+-------------------------------------
+locationID Latitude Longitude
+1 LWV 38.7642 87.6056
+2 LS77 30.7272 91.1486
+3 2N2 43.5919 71.7514
+4 VG00 37.3697 75.9469
+
+
+
+
+
+
+
+single.core <- function(airport.locs){
+running.sum <- 0
+for(i in 1:(nrow(airport.locs)-1)){
+for(j in (i+1):nrow(airport.locs)){
+# i is the row of the first lat/long pair
+# j is the row of the second lat/long pair
+this.dist <- haversine(airport.locs[i, 2],
+airport.locs[i, 3],
+airport.locs[j, 2],
+airport.locs[j, 3])
+running.sum <- running.sum + this.dist
+}
+}
+# Now we have to divide by the number of
+# distances we took. This is given by
+return(running.sum /
+((nrow(airport.locs)*(nrow(airport.locs)-1))/2))
+}
+# Now, let's time it!
+
+----------------------------
+user system elapsed
+5.400 0.034 5.466
+[1] 1667.186
+
+
+
+
+
+
+
+# We'll have to limit the output to the
+# first 11 columns
+combn(1:10, 2)[,1:11]
+----------------------------------------
+[,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9]
+[1,] 1 1 1 1 1 1 1 1 1
+[2,] 2 3 4 5 6 7 8 9 10
+[,10] [,11]
+[1,] 2 2
+[2,] 3 4
+
+
+
+
+small.world <- c("LAX", "ALB", "OLM", "JFK")
+all.combs <- combn(1:length(small.world), 2)
+for(i in 1:ncol(all.combs)){
+from <- small.world[all.combs[1, i]]
+to <- small.world[all.combs[2, i]]
+print(paste(from, " <-> ", to))
+}
+----------------------------------------
+[1] "LAX <-> ALB"
+[1] "LAX <-> OLM"
+[1] "LAX <-> JFK"
+[1] "ALB <-> OLM" # back to olympia
+[1] "ALB <-> JFK"
+[1] "OLM <-> JFK"
+
+
+
+
+
+
+
+small.world <- c("LAX", "ALB", "OLM", "JFK")
+all.combs <- combn(1:length(small.world), 2)
+# instead of printing each airport pair in a string,
+# we'll return the string
+results <- lapply(1:ncol(all.combs), function(x){
+from <- small.world[all.combs[1, x]]
+to <- small.world[all.combs[2, x]]
+return(paste(from, " <-> ", to))
+})
+print(results)
+-------------------------
+[[1]]
+[1] "LAX <-> ALB"
+[[2]]
+[1] "LAX <-> OLM"
+[[3]]
+[1] "LAX <-> JFK"
+........
+
+
+
+
+
+
+
+
+
+
+unlist(results)
+---------------------
+[1] "LAX <-> ALB" "LAX <-> OLM" "LAX <-> JFK"
+[4] "ALB <-> OLM" "ALB <-> JFK" "OLM <-> JFK"
+
+
+
+
+single.core.lapply <- function(airport.locs){
+all.combs <- combn(1:nrow(airport.locs), 2)
+numcombs <- ncol(all.combs)
+results <- lapply(1:numcombs, function(x){
+lat1 <- airport.locs[all.combs[1, x], 2]
+long1 <- airport.locs[all.combs[1, x], 3]
+lat2 <- airport.locs[all.combs[2, x], 2]
+long2 <- airport.locs[all.combs[2, x], 3]
+return(haversine(lat1, long1, lat2, long2))
+})
+return(sum(unlist(results)) / numcombs)
+}
+system.time(ave.dist <- single.core.lapply(airport.locs))
+print(ave.dist)
+---------------------------------------
+user system elapsed
+5.890 0.042 5.968
+[1] 1667.186
+
+
+
+
+
+
+
+
+
+
+#######################
+# NON-WINDOWS VERSION #
+#######################
+multi.core <- function(airport.locs){
+all.combs <- combn(1:nrow(airport.locs), 2)
+numcombs <- ncol(all.combs)
+results <- mclapply(1:numcombs, function(x){
+lat1 <- airport.locs[all.combs[1, x], 2]
+long1 <- airport.locs[all.combs[1, x], 3]
+lat2 <- airport.locs[all.combs[2, x], 2]
+long2 <- airport.locs[all.combs[2, x], 3]
+return(haversine(lat1, long1, lat2, long2))
+}, mc.cores=4)
+return(sum(unlist(results)) / numcombs)
+}
+###################
+# WINDOWS VERSION #
+###################
+clusterExport(cl, c("haversine", "to.radians"))
+
+multi.core <- function(airport.locs){
+all.combs <- combn(1:nrow(airport.locs), 2)
+numcombs <- ncol(all.combs)
+results <- parLapply(cl, 1:numcombs, function(x){
+lat1 <- airport.locs[all.combs[1, x], 2]
+long1 <- airport.locs[all.combs[1, x], 3]
+lat2 <- airport.locs[all.combs[2, x], 2]
+long2 <- airport.locs[all.combs[2, x], 3]
+return(haversine(lat1, long1, lat2, long2))
+})
+return(sum(unlist(results)) / numcombs)
+}
+system.time(ave.dist <- multi.core(airport.locs))
+print(ave.dist)
+-------------------------------
+user system elapsed
+7.363 0.240 2.743
+[1] 1667.186
+
+
+
+
+
+
+
+Using Rcpp
+
+
+#include <Rcpp.h>
+// [[Rcpp::export]]
+double square(double number){
+return(pow(number, 2));
+}
+
+
+
+library(Rcpp)
+sourceCpp("our_cpp_functions.cpp")
+square(3)
+--------------------------------
+[1] 9
+
+
+
+
+square <- function(number){
+return(number^2)
+}
+
+
+
+
+/* Add this (and all other snippets that
+start with "// [[Rcpp::export]]")
+to the C++ file, not the R code. */
+// [[Rcpp::export]]
+double to_radians_cpp(double degrees){
+return(degrees * 3.141593 / 180);
+}
+# with goes with our R code
+sourceCpp("our_cpp_functions.cpp")
+to_radians_cpp(10)
+-------------------------
+[1] 0.174533
+
+
+
+
+
+
+
+
+
+
+
+// [[Rcpp::export]]
+double haversine_cpp(double lat1, double long1,
+double lat2, double long2,
+std::string unit="km"){
+int radius = 6378;
+double delta_phi = to_radians_cpp(lat2 - lat1);
+double delta_lambda = to_radians_cpp(long2 - long1);
+double phi1 = to_radians_cpp(lat1);
+double phi2 = to_radians_cpp(lat2);
+double term1 = pow(sin(delta_phi / 2), 2);
+double term2 = cos(phi1) * cos(phi2)
+term2 = term2 * pow(sin(delta_lambda/2), 2);
+double the_terms = term1 + term2;
+double delta_sigma = 2 * atan2(sqrt(the_terms),
+sqrt(1-the_terms));
+double distance = radius * delta_sigma;
+/* if it is anything *but* km it is miles */
+if(unit != "km"){
+return(distance*0.621371);
+}
+return(distance);
+}
+
+
+
+
+
+
+
+
+
+sourceCpp("our_cpp_functions.cpp")
+haversine(51.88, 176.65, 56.94, 154.18)
+haversine_cpp(51.88, 176.65, 56.94, 154.18)
+----------------------------------------------
+[1] 1552.079
+[1] 1552.079
+
+
+
+
+
+
+
+
+// [[Rcpp::export]]
+double sum2(Rcpp::NumericVector a_vector){
+double running_sum = 0;
+int length = a_vector.size();
+for( int i = 0; i < length; i++ ){
+running_sum = running_sum + a_vector(i);
+}
+return(running_sum);
+}
+
+
+
+
+
+
+// [[Rcpp::export]]
+double single_core_cpp(Rcpp::NumericMatrix mat){
+int nrows = mat.nrow();
+int numcomps = nrows*(nrows-1)/2;
+double running_sum = 0;
+for( int i = 0; i < nrows; i++ ){
+for( int j = i+1; j < nrows; j++){
+double this_dist = haversine_cpp(mat(i,0), mat(i,1),
+mat(j,0), mat(j,1));
+running_sum = running_sum + this_dist;
+}
+}
+return running_sum / numcomps;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+sourceCpp("our_cpp_functions.cpp")
+the.matrix <- as.matrix(all.airport.locs[,-1])
+system.time(ave.dist <- single_core_cpp(the.matrix))
+print(ave.dist)
+----------------------------------------
+user system elapsed
+0.012 0.000 0.012
+[1] 1667.186
+
+
+the.matrix <- as.matrix(all.airport.locs[,-1])
+system.time(ave.dist <- single_core_cpp(the.matrix))
+print(ave.dist)
+-------------------------------
+user system elapsed
+12.310 0.080 12.505
+[1] 1869.744
+
+
+
+
+
+
+
+
+
+Being smarter about your code
+
+
+single.core.improved <- function(airport.locs){
+numrows <- nrow(airport.locs)
+running.sum <- 0
+
+for (i in 1:(numrows-1)) {
+this.dist <- sum(haversine(airport.locs[i,2],
+airport.locs[i, 3],
+airport.locs[(i+1):numrows, 2],
+airport.locs[(i+1):numrows, 3]))
+running.sum <- running.sum + this.dist
+}
+return(running.sum / (numrows*(numrows-1)/2))
+}
+system.time(ave.dist <- single.core.improved(all.airport.locs))
+print(ave.dist)
+------------------------------------------------------------------
+user system elapsed
+15.537 0.173 15.866
+[1] 1869.744
+
+
+
+
+
+
+
+
+
+
+
+
+

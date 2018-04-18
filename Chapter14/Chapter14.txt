@@ -1,0 +1,811 @@
+Checking unsanitized data
+
+
+a_dataset <- CHECKING_VERB(a_dataset, ....)
+
+
+Checking for out-of-bounds data
+
+library(assertr)
+mtcars.copy <- mtcars
+mtcars.copy$Percent.Max.Wt <- round(mtcars.copy$wt /
+max(mtcars.copy$wt),
+2)
+mtcars.copy <- assert(mtcars.copy, within_bounds(0,1),
+Percent.Max.Wt)
+
+
+
+
+
+mtcars.copy$Percent.Max.Wt[c(10,15)] <- 2
+mtcars.copy <- assert(mtcars.copy, within_bounds(0,1),
+Percent.Max.Wt)
+------------------------------------------------------------
+Column 'Percent.Max.Wt' violates assertion 'within_bounds(0, 1)' 2 times
+verb redux_fn predicate column index value
+1 assert NA within_bounds(0, 1) Percent.Max.Wt 10 2
+2 assert NA within_bounds(0, 1) Percent.Max.Wt 15 2
+Error: assertr stopped execution
+
+
+
+
+
+iris <- assert(iris, within_bounds(0, Inf),
+Sepal.Length, Sepal.Width,
+Petal.Length, Petal.Width)
+# or simply "-Species" because that
+# will include all columns *except* Species
+iris <- assert(iris, within_bounds(0, Inf),
+-Species)
+
+
+
+
+
+
+set.seed(1)
+vec <- runif(10, min=10, max=20)
+# randomly turn some elements negative
+vec <- vec * sample(c(1, -1), 10,
+replace=TRUE)
+example <- data.frame(weird=vec)
+example <- verify(example, ((weird < 20 & weird > 10) |
+(weird < -10 & weird > -20)))
+
+# or
+example <- verify(example, abs(weird) < 20 & abs(weird) > 10)
+# passes
+example$weird[4] <- 0
+example <- verify(example, abs(weird) < 20 & abs(weird) > 10)
+# fails
+-------------------------------------
+verification [abs(weird) < 20 & abs(weird) > 10] failed! (1 failure)
+verb redux_fn predicate column index value
+1 verify NA abs(weird) < 20 & abs(weird) > 10 NA 4 NA
+Error: assertr stopped execution
+
+
+
+
+
+
+
+
+
+
+
+Checking the data type of a column
+
+
+iris <- assert(iris, is.numeric, -Species)
+
+
+iris <- read.csv("PATH_TO_IRIS_DATA.csv",
+colClasses=c("numeric", "numeric",
+"numeric", "numeric",
+"character"))
+
+
+
+
+
+
+Checking for unexpected categories
+
+
+
+# passes
+iris <- assert(iris, in_set("setosa", "versicolor",
+"virginica"), Species)
+# mess up the data
+iris.copy <- iris
+# We have to make the 'Species' column not
+# a factor
+iris.copy$Species <- as.vector(iris$Species)
+iris.copy$Species[4:5] <- "SETOSA"
+iris.copy$Species[135] <- "verginica"
+iris.copy$Species[95] <- "i. versicolor"
+# fails
+iris.copy <- assert(iris.copy, in_set("setosa", "versicolor",
+"virginica"), Species)
+-------------------------------------------
+Column 'Species' violates assertion 'in_set("setosa", "versicolor",
+"virginica")' 4 times
+verb redux_fn predicate column index
+value
+1 assert NA in_set("setosa", "versicolor", "virginica") Species 4
+
+
+
+
+SETOSA
+2 assert NA in_set("setosa", "versicolor", "virginica") Species 5
+SETOSA
+3 assert NA in_set("setosa", "versicolor", "virginica") Species 95
+i. versicolor
+4 assert NA in_set("setosa", "versicolor", "virginica") Species 135
+verginica
+Error: assertr stopped execution
+
+
+
+
+
+
+
+by(iris.copy, iris.copy$Species, nrow)
+
+
+
+
+
+
+
+Checking for outliers, entry errors, or unlikely data points
+
+
+iris <- insist(iris, within_n_sds(5), -Species)
+
+
+
+
+iris <- insist(iris, within_n_mads(4), -Species)
+iris$Petal.Length[5] <- 15
+iris <- insist(iris, within_n_mads(4), -Species)
+---------------------------------------------
+Column 'Petal.Length' violates assertion 'within_n_mads(4)' 1 time
+verb redux_fn predicate column index value
+1 insist NA within_n_mads(4) Petal.Length 5 15
+Error: assertr stopped execution
+
+
+
+
+
+
+Chaining assertions
+
+
+
+iris <-
+CHECKING_CONSTRUCT4(CHECKING_CONSTRUCT3(CHECKING_CONSTRUCT2(CHECKING_CONSTR
+UCT1(this, ...), ...), ...), ...)
+
+
+
+
+
+library(magrittr)
+4 %>% sqrt # 2
+iris %>% head(n=3) # the first 3 rows of iris
+iris <- iris %>% assert(within_bounds(0, Inf), -Species)
+
+
+
+
+
+
+iris <- iris %>%
+assert(is.numeric, -Species) %>%
+assert(within_bounds(0, Inf), -Species) %>%
+assert(in_set("setosa", "versicolor", "virginica"), Species) %>%
+insist(within_n_mads(4), -Species)
+# or, equivalently
+CHECKS <- . %>%
+assert(is.numeric, -Species) %>%
+assert(within_bounds(0, Inf), -Species) %>%
+assert(in_set("setosa", "versicolor", "virginica"), Species) %>%
+insist(within_n_mads(4), -Species)
+iris <- iris %>% CHECKS
+
+
+
+
+
+
+
+
+
+
+
+mtcars %>%
+chain_start %>%
+assert(in_set(1, 2, 3, 4), carb) %>%
+assert_rows(rowMeans, within_bounds(0,5), gear:carb) %>%
+verify(nrow(.)==10) %>%
+verify(mpg < 32) %>%
+chain_end
+------------------------------------
+There are 7 errors across 4 verbs:
+-
+verb redux_fn predicate column index value
+1 assert <NA> in_set(1, 2, 3, 4) carb 30 6.0
+2 assert <NA> in_set(1, 2, 3, 4) carb 31 8.0
+3 assert_rows rowMeans within_bounds(0, 5) ~gear:carb 30 5.5
+4 assert_rows rowMeans within_bounds(0, 5) ~gear:carb 31 6.5
+5 verify <NA> nrow(.) == 10 <NA> 1 NA
+6 verify <NA> mpg < 32 <NA> 18 NA
+7 verify <NA> mpg < 32 <NA> 20 NA
+Error: assertr stopped execution
+
+
+
+
+
+
+
+...
+chain_end(error_fun=error_df_return)
+
+
+
+
+
+> vignette("assertr")
+
+
+
+
+
+Getting started
+
+
+> library(magrittr)
+> library(stringr)
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+working-with-messy-data/small-library.dat", "small-library.dat")
+> lib <- read.delim("./small-library.dat", stringsAsFactors=FALSE,
++ na.strings=c("NA", ""))
+> lib
+ISBN OCLC
+1 9781447286813 930016590
+2 147460725X 1005289838
+3 144205374-7 (OCoLC)320194791
+4 9780525433576 957617619
+5 1-405-88229-8 960887987
+6 8496886611fsds34Recur 1003766525
+7 <NA> \\\\$a405610020
+8 889882002x 947993663
+9 978-0060000578 795634598
+TITLE DD
+1 Are You There, God? It's Me, Margaret 813.540
+2 The Color Purple 813.540
+3 Tar Beach 741.642
+4 De Amor y de sombra NA
+5 The Picture of Dorian Grey 823.800
+6 ¿Recuerda Aquella Vez? NA
+7 Friends from the other side = Amigos del otro lado NA
+8 Finnegan’s Wake 823.912
+
+9 El Ratoncito De La Moto NA
+>
+> lib$TITLE
+[1] "Are You There, God? It's Me, Margaret"
+[2] "The Color Purple"
+[3] "Tar Beach"
+[4] "De Amor y de sombra"
+[5] "The Picture of Dorian Grey"
+[6] "¿Recuerda Aquella Vez?"
+[7] "Friends from the other side = Amigos del otro lado"
+[8] "Finnegan’s Wake"
+[9] "El Ratoncito De La Moto"
+
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_detect("The")
+[1] TRUE TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE
+
+
+
+
+
+
+
+TITLE result
+1 Are You There, God? It's Me, Margaret TRUE
+2 The Color Purple TRUE
+3 Tar Beach FALSE
+4 De Amor y de sombra FALSE
+5 The Picture of Dorian Grey TRUE
+6 ¿Recuerda Aquella Vez? FALSE
+7 Friends from the other side = Amigos del otro lado FALSE
+8 Finnegan’s Wake FALSE
+9 El Ratoncito De La Moto FALSE
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("The")
+[1] "Are You There, God? It's Me, Margaret"
+[2] "The Color Purple"
+[3] "The Picture of Dorian Grey"
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\bThe\\b")
+[1] "The Color Purple" "The Picture of Dorian Grey"
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\b[Tt]he\\b")
+[1] "The Color Purple"
+[2] "The Picture of Dorian Grey"
+[3] "Friends from the other side = Amigos del otro lado"
+
+
+
+> lib$TITLE %>% str_subset("^The\\b")
+[1] "The Color Purple" "The Picture of Dorian Grey"
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\bBeach$")
+[1] "Tar Beach"
+
+
+
+
+> lib$TITLE %>% str_subset("[Ll]a")
+[1] "¿Recuerda Aquella Vez?"
+[2] "Friends from the other side = Amigos del otro lado"
+[3] "El Ratoncito De La Moto"
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\b[Ll]a\\b")
+[1] "El Ratoncito De La Moto"
+
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\b[Ee]l\\b")
+[1] "El Ratoncito De La Moto"
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\b[Dd][Ee]l\\b")
+[1] "Friends from the other side = Amigos del otro lado"
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\b[Dd]?[Ee]l\\b")
+[1] "Friends from the other side = Amigos del otro lado"
+[2] "El Ratoncito De La Moto"
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("Gr(a|e)y")
+[1] "The Picture of Dorian Grey"
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("Grey|Gray")
+[1] "The Picture of Dorian Grey"
+
+
+
+> lib$TITLE %>% str_subset("\\b([Ll]a|[Dd]?[Ee]l)\\b")
+[1] "Friends from the other side = Amigos del otro lado"
+[2] "El Ratoncito De La Moto"
+
+
+
+
+
+
+
+> lib$TITLE %>% str_subset("\\b([Tt]he|[Ll]a|[Dd]?[Ee]l)\\b")
+[1] "The Color Purple"
+[2] "The Picture of Dorian Grey"
+[3] "Friends from the other side = Amigos del otro lado"
+[4] "El Ratoncito De La Moto"
+
+
+
+
+
+
+Regex for data normalization
+
+
+> lib$TITLE %>% str_subset("'")
+[1] "Are You There, God? It's Me, Margaret"
+
+
+
+
+> lib$TITLE %>% str_subset("’")
+[1] "Finnegan’s Wake"
+
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_replace("[:punct:]", "")
+[1] "Are You There God? It's Me, Margaret"
+[2] "The Color Purple"
+[3] "Tar Beach"
+[4] "De Amor y de sombra"
+[5] "The Picture of Dorian Grey"
+[6] "Recuerda Aquella Vez?"
+[7] "Friends from the other side = Amigos del otro lado"
+[8] "Finnegans Wake"
+[9] "El Ratoncito De La Moto"
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_replace_all("[:punct:]", "")
+[1] "Are You There God Its Me Margaret"
+[2] "The Color Purple"
+[3] "Tar Beach"
+[4] "De Amor y de sombra"
+[5] "The Picture of Dorian Grey"
+[6] "Recuerda Aquella Vez"
+[7] "Friends from the other side = Amigos del otro lado"
+[8] "Finnegans Wake"
+[9] "El Ratoncito De La Moto"
+
+
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_replace_all(" ", "")
+
+
+
+
+
+> lib$TITLE %>% str_replace_all("\\s", "")
+[1] "AreYouThere,God?It'sMe,Margaret"
+[2] "TheColorPurple"
+[3] "TarBeach"
+[4] "DeAmorydesombra"
+[5] "ThePictureofDorianGrey"
+[6] "¿RecuerdaAquellaVez?"
+[7] "Friendsfromtheotherside=Amigosdelotrolado"
+[8] "Finnegan’sWake"
+[9] "ElRatoncitoDeLaMoto"
+
+
+
+
+
+
+
+
+
+
+
+> # the output is formatted to make it easier to see
+> lib$TITLE %>% str_replace_all("\\w", "")
+TITLE result
+1 Are You There, God? It's Me, Margaret , ? ' ,
+2 The Color Purple
+3 Tar Beach
+4 De Amor y de sombra
+5 The Picture of Dorian Grey
+6 ¿Recuerda Aquella Vez? ¿ ?
+7 Friends from the other side = Amigos del otro lado =
+8 Finnegan’s Wake ’
+9 El Ratoncito De La Moto
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_replace_all("\\W", "")
+[1] "AreYouThereGodItsMeMargaret" "TheColorPurple"
+[3] "TarBeach" "DeAmorydesombra"
+[5] "ThePictureofDorianGrey" "RecuerdaAquellaVez"
+[7] "FriendsfromtheothersideAmigosdelotrolado" "FinnegansWake"
+[9] "ElRatoncitoDeLaMoto"
+
+
+
+
+
+
+
+
+
+
+> lib$TITLE %>% str_replace_all("\\W", "") %>% str_to_lower
+[1] "areyoutheregoditsmemargaret" "thecolorpurple"
+[3] "tarbeach" "deamorydesombra"
+[5] "thepictureofdoriangrey" "recuerdaaquellavez"
+[7] "friendsfromtheothersideamigosdelotrolado" "finneganswake"
+[9] "elratoncitodelamoto"
+
+
+
+
+
+
+
+
+
+
+
+
+
+> lib$title_norm <- lib$TITLE %>%
++ str_to_lower %>%
++ str_replace_all("\\b(the|la|d?el)\\b\\s+", "") %>%
++ str_replace_all("\\W", "")
+
+
+
+
+
+
+
+
+
+
+
+
+>
+> lib$title_norm
+[1] "areyoutheregoditsmemargaret" "colorpurple"
+[3] "tarbeach" "deamorydesombra"
+[5] "pictureofdoriangrey" "recuerdaaquellavez"
+[7] "friendsfromothersideamigosotrolado" "finneganswake"
+[9] "ratoncitodemoto"
+
+
+
+
+
+
+
+
+
+
+
+
+
+More normalization
+
+> lib$ISBN
+[1] "9781447286813" "147460725X" "144205374-7 "
+[4] "9780525433576" "1-405-88229-8" "8496886611fsds34Recur"
+[7] NA
+
+
+
+
+
+
+
+
+> lib$ISBN %>% str_replace_all("\\D", "")
+ISBN result
+1 9781447286813 9781447286813
+2 147460725X 147460725
+3 144205374-7 1442053747
+4 9780525433576 9780525433576
+5 1-405-88229-8 1405882298
+6 8496886611fsds34Recur 849688661134
+7 <NA> <NA>
+8 889882002x 889882002
+9 978-0060000578 9780060000578
+
+
+
+
+
+
+> lib$ISBN %>% str_replace_all("^(\\d+)\\D*.*", "\\1")
+ISBN result
+1 9781447286813 9781447286813
+2 147460725X 147460725
+3 144205374-7 144205374
+4 9780525433576 9780525433576
+5 1-405-88229-8 1
+6 8496886611fsds34Recur 8496886611
+7 <NA> <NA>
+8 889882002x 889882002
+9 978-0060000578 978
+
+
+
+
+
+
+
+
+> str_replace_all("8496886611fsds34Recur", "^(\\d+)\\D*", "\\1")
+[1] "849688661134Recur"
+
+
+
+
+
+
+
+
+
+> str_replace_all("ISBN: 8496886611fsds34Recur", "\\D*(\\d+)\\D*", "\\1")
+[1] "849688661134"
+
+
+
+
+
+
+
+
+
+> str_replace_all("ISBN: uh, idk bruh", "\\D*(\\d+)\\D*", "\\1")
+[1] "ISBN: uh, idk bruh"
+
+
+
+
+
+
+
+
+
+
+> str_replace_all("ISBN: uh, idk bruh", "\\D*(\\d*)\\D*", "\\1")
+[1] ""
+
+
+
+
+
+> lib$ISBN %>% str_replace_all("\\D*(\\d*)\\D*.*", "\\1")
+ISBN result
+1 9781447286813 9781447286813
+2 147460725X 147460725
+3 144205374-7 144205374
+4 9780525433576 9780525433576
+5 1-405-88229-8 1
+6 8496886611fsds34Recur 8496886611
+7 <NA> <NA>
+8 889882002x 889882002
+9 978-0060000578 978
+
+
+
+
+
+> lib$ISBN %>%
++ str_replace_all("-", "") %>%
++ str_replace_all("\\D*(\\d*)\\D*.*", "\\1")
+ISBN result
+1 9781447286813 9781447286813
+2 147460725X 147460725
+3 144205374-7 1442053747
+4 9780525433576 9780525433576
+5 1-405-88229-8 1405882298
+6 8496886611fsds34Recur 8496886611
+7 <NA> <NA>
+8 889882002x 889882002
+9 978-0060000578 9780060000578
+
+
+
+
+
+
+
+
+
+
+
+
+> lib$ISBN %>%
++ str_to_upper %>%
++ str_replace_all("-", "") %>%
++ str_replace_all("\\D*([X\\d]*)\\D*.*", "\\1")
+ISBN result
+1 9781447286813 9781447286813
+2 147460725X 147460725X
+3 144205374-7 1442053747
+4 9780525433576 9780525433576
+5 1-405-88229-8 1405882298
+6 8496886611fsds34Recur 8496886611
+7 <NA> <NA>
+8 889882002x 889882002X
+9 978-0060000578 9780060000578
+
+
+
+
+
+
+
+
+
+> "1234XX56789X" %>%
++ str_to_upper %>%
++ str_replace_all("-", "") %>%
++ str_replace_all("\\D*([X\\d]*)\\D*.*", "\\1")
+[1] "1234XX56789X"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

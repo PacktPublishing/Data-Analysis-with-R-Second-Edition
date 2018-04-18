@@ -1,0 +1,1320 @@
+The data.table package
+
+
+# select columns "Petal.Width" and "Petal.Length" for setosas and
+virginicas
+> iris[iris$Species %in% c("setosa", “virginica"),
+c("Petal.Width", "Petal.Length")]
+
+
+
+SELECT <j> WHERE <i> GROUP BY <by>
+
+
+
+> library(data.table)
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+working-with-packages/data/tracks-2016-26-11.txt", "./tracks.txt")
+> tracks <- fread("./data/tracks.txt")
+> head(tracks, n=3)
+
+
+
+
+
+> names(tracks) <- c("thedate", "trackname", "artist", "album",
+"trackmbid", "artistmbid", "albummbid")
+> tracks
+
+
+
+
+
+> tracks[1, ]
+> tracks[1:3, ]
+> tracks[c(1,1,2)]
+> tracks[.N, ]
+
+
+
+
+
+> tracks[artist=="Belle and Sebastian", ]
+thedate trackname artist
+1: 1433898050 A Century Of Elvis Belle and Sebastian
+2: 1433898049 A Century Of Elvis Belle and Sebastian
+3: 1433897713 Dog On Wheels Belle and Sebastian
+4: 1433897712 Dog On Wheels Belle and Sebastian
+5: 1433887855 The Power Of Three Belle and Sebastian
+
+
+
+
+
+
+> tracks[artist=="Belle and Sebastian" | artist=="The Smiths", ]
+> # Semantically equivalent to expression above
+> tracks[artist %in% c("Belle and Sebastian", "The Smiths"), ]
+> tracks[artist=="Belle and Sebastian" & trackname=="The Model", ]
+
+
+
+
+
+
+> tracks[order(artist),]
+thedate trackname artist
+1: 1351629570 Canadian Idiot “Weird Al” Yankovic
+2: 1254940363 ESENA MONO (Remix) Keti Garbi
+3: 1257488339 Baby Come On +44
+
+
+
+
+
+> backup <- copy(tracks)
+> tmp <- copy(tracks)
+> setorder(tmp, artist)
+> # tmp is now sorted
+
+
+
+
+
+
+
+What in the world are by reference semantics?
+
+> mtcopy <- mtcars
+> mtcopy2 <- mtcopy
+
+
+
+> mtcopy[order(mtcopy$mpg), ]
+
+
+
+
+> mtcopy <- mtcopy[order(mtcopy$mpg), ]
+
+
+
+
+
+> mtDT <- data.table(mtcars)
+> mtDT2 <- mtDT
+
+
+
+
+> setorder(mtDT, mpg)
+
+
+
+
+> DT <- data.table(mtcars)
+> DT2 <- copy(DT)
+> setorder(DT, mpg)
+> DT[1:2, ]
+mpg cyl disp hp drat wt qsec vs am gear carb
+1: 10.4 8 472 205 2.93 5.250 17.98 0 0 3 4
+2: 10.4 8 460 215 3.00 5.424 17.82 0 0 3 4
+> DT2[1:2, ]
+mpg cyl disp hp drat wt qsec vs am gear carb
+1: 21.0 6 160 110 3.90 2.620 16.46 0 1 4 4
+2: 21.0 6 160 110 3.90 2.875 17.02 0 1 4 4
+
+
+
+
+
+
+> DT <- data.table(mtcars)
+> DT2 <- DT
+> DT <- DT[order(mpg), ]
+> DT[1:2, ]
+mpg cyl disp hp drat wt qsec vs am gear carb
+1: 10.4 8 472 205 2.93 5.250 17.98 0 0 3 4
+2: 10.4 8 460 215 3.00 5.424 17.82 0 0 3 4
+> DT2[1:2, ]
+mpg cyl disp hp drat wt qsec vs am gear carb
+1: 21.0 6 160 110 3.90 2.620 16.46 0 1 4 4
+2: 21.0 6 160 110 3.90 2.875 17.02 0 1 4 4
+
+
+
+
+
+
+
+
+
+
+The j in DT[i, j, by]
+
+
+> tracks[, trackname]
+[1] "A Perfect Match" "Mamma Mia" "Upside Down" "Upside Down"
+"Mamma Mia"
+> tracks[, .(trackname)]
+trackname
+1: A Perfect Match
+2: Mamma Mia
+3: Upside Down
+# ....
+> tracks[, .(trackname, artist)]
+trackname artist
+1: A Perfect Match A*Teens
+2: Mamma Mia A*Teens
+3: Upside Down A*Teens
+> # semantically equivalent to above
+> tracks[, c("trackname", "artist"), with=TRUE]
+
+
+
+
+
+> # extract all columns in the data.table from thedate to album
+> tracks[, thedate:album]
+> # we can also use the ! to select a range of columns we’d like to
+*exclude*
+> tracks[, !(trackmbid:albummbid)]
+
+
+
+
+
+> tracks[, c("trackmbid", "albummbid") := NULL]
+
+
+
+
+> tracks[, .(mbid=artistmbid)]
+
+
+
+
+
+> tracks[, .(artist, mbid=artistmbid)]
+artist mbid
+1: A*Teens 69d9cb53-5b8f-41b0-ac84-49eabea535b2
+2: A*Teens 69d9cb53-5b8f-41b0-ac84-49eabea535b2
+3: A*Teens 69d9cb53-5b8f-41b0-ac84-49eabea535b2
+4: A*Teens 69d9cb53-5b8f-41b0-ac84-49eabea535b2
+5: A*Teens 69d9cb53-5b8f-41b0-ac84-49eabea535b2
+---
+138131: TV on the Radio eb872766-98f6-453d-883f-2ae908a18315
+138132: Arcade Fire 52074ba6-e495-4ef3-9bb4-0703888a9f68
+138133: Yo La Tengo 3f542031-b054-454d-b57b-812fa2a81b11
+138134: of Montreal 8475297d-fb78-4630-8d74-9b87b6bb7cc8
+138135: Camera Obscura ef43cee7-13f5-4d10-844e-879aba3d8b19
+
+
+
+
+
+
+> setnames(tracks, "artistmbid", "mbid")
+
+
+
+
+
+
+> library(anytime)
+> tracks[, .(thedate=anytime(thedate))]
+
+
+
+
+> tracks[, thedate:=anytime(thedate)]
+
+
+
+
+
+Using both i and j
+
+> tracks[artist=="Belle and Sebastian", trackname]
+[1] "A Century Of Elvis" "A Century Of Elvis" "Dog On Wheels"...
+> tracks[artist=="Belle and Sebastian", .(artist, trackname)]
+artist trackname
+1: Belle and Sebastian A Century Of Elvis
+2: Belle and Sebastian A Century Of Elvis
+3: Belle and Sebastian Dog On Wheels
+4: Belle and Sebastian Dog On Wheels
+5: Belle and Sebastian The Power Of Three
+---
+5553: Belle and Sebastian Fiction
+5554: Belle and Sebastian Your Cover’s Blown
+5555: Belle and Sebastian I Don’t Want To Play Football
+5556: Belle and Sebastian Dog On Wheels
+5557: Belle and Sebastian Take Your Carriage Clock And Shove It
+> tracks[artist=="Belle and Sebastian" & trackname=="The Model", .N]
+[1] 53
+
+
+
+
+> jan1 <- anytime("2016-1-01 00:00:01")
+> jan31 <- anytime("2016-1-31 23:59:59")
+> tracks[thedate > jan1 & thedate < jan31, .N]
+[1] 895
+
+
+
+> library(lubridate)
+> tracks[, themonth:=month(thedate, label=TRUE)]
+
+
+
+
+> tracks[, table(themonth)]
+themonth
+Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+11875 10468 11400 9025 12743 13609 9439 9861 13509 13264 12175 10767
+
+
+
+
+> tracks[, .(uniqueartists = sum(!duplicated(artist)))]
+uniqueartists
+1: 2202
+> tracks[, .(uniquembids=sum(!duplicated(mbid)))]
+uniquembids
+1: 1960
+
+
+
+
+
+> tracks[duplicated(mbid) & !duplicated(artist), .(artist, mbid)]
+artist mbid
+1: Reservoir Ticklers
+2: Chucky Danger
+3: Bonnie ‘Prince’ Billy
+4: Oro Solido
+5: Kinito Mendez
+---
+238: Yesan Damen
+239: Iron & Wine & Calexico c3f28da8-662d-4f09-bdc7-3084bf685930
+240: Feist/Gonzales
+241: Feist/Jane Birkin
+242: Halfpastfour
+
+
+
+
+
+> tracks[artist=="Belle and Sebastian" & trackname=="The Model", .(artist,
+trackname, album)]
+artist trackname
+album
+1: Belle and Sebastian The Model Fold Your Hands Child, You Walk Like a
+Peasant
+2: Belle and Sebastian The Model Fold Your Hands Child, You Walk Like a
+Peasant
+3: Belle and Sebastian The Model Fold Your Hands Child, You Walk Like a
+Peasant
+
+
+
+
+
+
+> tracks[artist=="Belle and Sebastian" & trackname=="The Model", .(artist,
+trackname, album)][!duplicated(album),]
+artist trackname
+album
+1: Belle and Sebastian The Model Fold Your Hands Child, You Walk Like a
+Peasant
+2: Belle and Sebastian The Model Hollywood Bowl
+Live
+3: Belle and Sebastian The Model (2006.07.06) Hollywood
+Bowl
+4: Belle and Sebastian The Model
+> # now just return a vector of the unique album names
+> tracks[artist=="Belle and Sebastian" & trackname=="The Model", .(artist,
+trackname, album)][!duplicated(album), album]
+[1] "Fold Your Hands Child, You Walk Like a Peasant" "Hollywood Bowl Live"
+[3] "(2006.07.06) Hollywood Bowl"
+
+
+
+
+
+
+
+Using the by argument for grouping
+
+
+
+> tracks[, .N, artist][order(-N)[1:10]]
+artist N
+1: Belle and Sebastian 5557
+2: The Smiths 4881
+3: The Magnetic Fields 4622
+4: P:ano 3888
+5: The Cure 3792
+6: Stars 3554
+7: Bad Religion 2977
+8: Elvis Costello 2908
+9: The Beatles 2461
+10: Radiohead 2198
+
+
+
+> tracks[, .N, themonth]
+themonth N
+1: Nov 12175
+2: Oct 13264
+3: Sep 13509
+4: Aug 9861
+
+
+
+
+tracks[, .N, month(thedate, label=TRUE)]
+
+
+
+
+
+> tracks[, .N, .(artist, album)][order(-N), ]
+artist album N
+1: P:ano When It’s Dark And It’s Summer 2355
+2: The Magnetic Fields 69 Love Songs, Vol. 1 1336
+3: Elvis Costello Armed Forces 1037
+
+
+
+
+
+> tracks[, .N, .(artist, album)][, .N, artist][order(-N)]
+artist N
+1: The Beatles 43
+2: Elvis Costello 36
+3: The Smiths 32
+4: Radiohead 32
+5: Stars 28
+
+
+
+
+
+
+
+> tracks[, .N, .(year(thedate), themonth)]
+year themonth N
+1: 2016 Nov 124
+2: 2016 Oct 258
+3: 2016 Sep 225
+4: 2016 Aug 215
+5: 2016 Jul 411
+---
+103: 2008 May 952
+104: 2008 Apr 1101
+105: 2008 Mar 1486
+106: 2008 Feb 984
+107: 2008 Jan 877
+
+
+
+
+
+
+
+
+
+> tmp <- tracks[, .N, .(year(thedate), themonth)]
+> tmp[, mean(N), year]
+year V1
+1: 2016 361.0000
+2: 2015 948.0833
+3: 2014 1464.4167
+
+
+
+
+
+
+
+
+> tracks[, .N, .(year(thedate), themonth)][
++ , .(mean_number_of_plays_per_month=round(mean(N))), year][
++ order(year), ]
+year mean_number_of_plays_per_month
+1: 2008 1082
+2: 2009 750
+3: 2010 1551
+...
+
+
+
+
+
+Joining data tables
+
+
+> left <- data.table(age=round(rnorm(5, 30, 5)),
++ name=c("Isabella", "Marisol", "Aniyah",
++ "DeAndre", "Taylor"))
+> right <- data.table(fav_color=c("red", "black", "green",
++ "yellow", "purple", "orange"),
++ name=c("Marisol", "Taylor", "Ethan",
++ "DeAndre", "Isabella", "Nathan"))
+> left
+age name
+1: 27 Isabella
+2: 31 Marisol
+3: 26 Aniyah
+4: 38 DeAndre
+5: 32 Taylor
+> right
+fav_color name
+1: red Marisol
+2: black Taylor
+3: green Ethan
+4: yellow DeAndre
+5: purple Isabella
+6: orange Nathan
+
+
+
+
+> # inner join
+> left[right, on="name", nomatch=0]
+age name fav_color
+1: 31 Marisol red
+2: 32 Taylor black
+3: 38 DeAndre yellow
+4: 27 Isabella purple
+
+
+
+
+> # note the, perhaps, counter-intuitive
+> # placement of the tables
+> right[left, on="name"]
+fav_color name age
+1: purple Isabella 27
+2: red Marisol 31
+3: NA Aniyah 26
+4: yellow DeAndre 38
+5: black Taylor 32
+
+
+
+
+
+
+
+
+
+> merge(left, right, all=TRUE)
+name age fav_color
+1: Aniyah 26 NA
+2: DeAndre 38 yellow
+3: Ethan NA green
+4: Isabella 27 purple
+5: Marisol 31 red
+6: Nathan NA orange
+7: Taylor 32 black
+
+
+
+
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+working-with-packages/data/artist-info.txt", "./artist-info.txt")
+> artistinfo <- fread ("./artist-info.txt", encoding="UTF-8")
+> artistinfo
+
+
+
+
+> artistinfo[, .N, country][order(-N)]
+country N
+1: United States 652
+2: United Kingdom 374
+3: Canada 78
+4: Sweden 63
+5: France 63
+
+
+
+
+> nrow(tracks[artistinfo, on="mbid"]) # right join
+[1] 122242
+> nrow(artistinfo[tracks, on="mbid"]) # left join
+[1] 138135
+
+
+
+
+> tmp <- tracks[artistinfo, nomatch=0, on="mbid"]
+> nrow(tmp)
+[1] 122241
+
+
+
+
+
+> setkey(tracks, "mbid")
+> setkey(artistinfo, "mbid")
+> # do an inner join and extract only some columns
+> withcountry <- tracks[artistinfo, nomatch=0][, .(artist, trackname,
+album, country)]
+> withcountry
+
+
+
+
+> withcountry[, .N, country][order(-N),]
+country N
+1: United Kingdom 51366
+2: United States 41260
+3: Canada 10799
+4: France 4222
+5: Germany 3125
+
+
+
+
+
+> playspercountry <- withcountry[, .(playspercountry=.N), country]
+> playspercountry[artistspercountry, on="country"][order(-
+playspercountry)[1:10]]
+country playspercountry artistspercountry
+1: United Kingdom 51366 374
+2: United States 41260 652
+3: Canada 10799 78
+4: France 4222 63
+5: Germany 3125 52
+6: Australia 2555 31
+7: Italy 1931 39
+8: Sweden 1473 63
+9: Jamaica 1378 22
+10: Russia 679 6
+
+
+
+
+
+
+Reshaping, melting, and pivoting data
+
+
+year themonth N
+1: 2016 Sep 225
+2: 2016 Aug 215
+3: 2016 Jul 411
+4: 2016 Jun 169
+5: 2016 May 478
+---
+103: 2008 Feb 984
+104: 2008 Jan 877
+105: 2016 Mar 360
+106: 2016 Oct 258
+107: 2016 Nov 124
+
+
+
+
+
+
+
+
+
+year Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+1: 2008 877 984 1486 1101 952 508 355 924 1244 1690 1873 984
+2: 2009 1145 1475 654 728 321 590 46 972 861 690 870 642
+3: 2010 88 22 308 1016 2629 2518 885 356 3330 2671 1898 2889
+4: 2011 2372 2272 1340 642 1777 1788 1138 1253 2111 2427 1829 1695
+5: 2012 2118 1720 2597 1584 3112 1718 2444 2093 1847 2704 2025 1279
+6: 2013 1305 1034 1050 764 1215 2848 1701 1943 1974 1077 1659 2177
+7: 2014 1767 1838 1521 1449 1149 2024 1499 1674 1264 1153 1395 840
+8: 2015 1308 842 2084 1186 1110 1446 960 431 653 594 502 261
+9: 2016 895 281 360 555 478 169 411 215 225 258 124 NA
+
+
+
+
+
+themonth 2008 2009 2010 2011 2012 2013 2014 2015 2016
+1: Jan 877 1145 88 2372 2118 1305 1767 1308 895
+2: Feb 984 1475 22 2272 1720 1034 1838 842 281
+3: Mar 1486 654 308 1340 2597 1050 1521 2084 360
+4: Apr 1101 728 1016 642 1584 764 1449 1186 555
+5: May 952 321 2629 1777 3112 1215 1149 1110 478
+6: Jun 508 590 2518 1788 1718 2848 2024 1446 169
+7: Jul 355 46 885 1138 2444 1701 1499 960 411
+8: Aug 924 972 356 1253 2093 1943 1674 431 215
+9: Sep 1244 861 3330 2111 1847 1974 1264 653 225
+10: Oct 1690 690 2671 2427 2704 1077 1153 594 258
+11: Nov 1873 870 1898 1829 2025 1659 1395 502 124
+12: Dec 984 642 2889 1695 1279 2177 840 261 NA
+
+
+
+
+
+> long <- tracks[, .N, .(year(thedate), themonth)]
+> long
+year themonth N
+1: 2016 Sep 225
+2: 2016 Aug 215
+3: 2016 Jul 411
+4: 2016 Jun 169
+5: 2016 May 478
+.
+.
+.
+103: 2008 Feb 984
+104: 2008 Jan 877
+105: 2016 Mar 360
+106: 2016 Oct 258
+107: 2016 Nov 124
+
+
+
+
+
+> dcast(long, year ~ themonth, value.var="N")
+year Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+1: 2008 877 984 1486 1101 952 508 355 924 1244 1690 1873 984
+2: 2009 1145 1475 654 728 321 590 46 972 861 690 870 642
+3: 2010 88 22 308 1016 2629 2518 885 356 3330 2671 1898 2889
+
+
+
+
+
+> dcast(long, themonth ~ year, value.var="N")
+themonth 2008 2009 2010 2011 2012 2013 2014 2015 2016
+1: Jan 877 1145 88 2372 2118 1305 1767 1308 895
+2: Feb 984 1475 22 2272 1720 1034 1838 842 281
+...
+
+
+
+
+
+
+> seasonsDT <- data.table(season=c(rep("spring", 3),
++ rep("summer", 3),
++ rep("fall", 3),
++ rep("winter", 3)),
++ themonth=c("Mar", "Apr", "May", "Jun",
++ "Jul", "Aug", "Sep", "Oct",
++ "Nov", "Dec", "Jan", "Feb"))
+> seasonsDT
+season themonth
+1: spring Mar
+2: spring Apr
+3: spring May
+...
+10: winter Dec
+11: winter Jan
+12: winter Feb
+>
+> # join the tables
+> longwithseason <- long[seasonsDT, on="themonth"]
+> longwithseason year themonth N season
+1: 2015 Mar 2084 spring
+...
+> setcolorder(longwithseason, c("year", "season", "themonth", "N"))
+> longwithseason
+year season themonth N
+1: 2015 spring Mar 2084
+2: 2014 spring Mar 1521
+3: 2013 spring Mar 1050
+4: 2012 spring Mar 2597
+5: 2011 spring Mar 1340
+---
+103: 2012 winter Feb 1720
+104: 2011 winter Feb 2272
+105: 2010 winter Feb 22
+106: 2009 winter Feb 1475
+107: 2008 winter Feb 984
+
+
+
+
+
+> pivoted <- dcast(longwithseason, year ~ season, value.var="N",
+fun.aggr=sum)
+> pivoted
+year fall spring summer winter
+1: 2008 4807 3539 1787 2845
+2: 2009 2421 1703 1608 3262
+3: 2010 7899 3953 3759 2999
+4: 2011 6367 3759 4179 6339
+5: 2012 6576 7293 6255 5117
+6: 2013 4710 3029 6492 4516
+7: 2014 3812 4119 5197 4445
+8: 2015 1749 4380 2837 2411
+9: 2016 607 1393 795 1176
+
+
+
+
+
+
+> melt(pivoted, measure.vars=c("fall", "spring", "summer", "winter"))
+year variable value
+1: 2008 fall 4807
+2: 2009 fall 2421
+3: 2010 fall 7899
+4: 2011 fall 6367
+...
+year variable value
+# same thing
+> melt(pivoted, measure.vars=2:5)
+...
+
+
+
+
+
+
+> melt(pivoted, measure.vars=c(“fall”, “spring”, “summer”, “winter”),
++ variable.name=“season”, value.name=“N”)
+year season N
+1: 2008 fall 4807
+2: 2009 fall 2421
+...
+year season N
+
+
+
+
+
+Functional programming as a main tidyverse principle
+
+
+
+> arg_one %>% dplyr_function(arg_two, arg_three)
+> dplyr_function(arg_one, arg_two, arg_three)
+
+
+
+
+Loading data for use in dplyr
+
+
+> library(readr)
+> library(magrittr)
+> library(dplyr)
+>
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+working-with-packages/data/tracks-2016-26-11.txt", "./tracks.txt")
+> tracks <- read_delim("./tracks.txt", delim="\t", col_names=FALSE)
+Parsed with column specification:
+cols(
+X1 = col_integer(),
+X2 = col_character(),
+X3 = col_character(),
+X4 = col_character(),
+X5 = col_character(),
+X6 = col_character(),
+X7 = col_character()
+)
+Warning: 142 parsing failures.
+>
+> tracks %>% class
+[1] “tbl_df” “tbl” “data.frame”
+
+
+
+
+
+
+
+> tracks %>% nrow
+[1] 116276
+
+
+
+
+> tracks <- read_delim("./tracks.txt", delim="\t", col_names=FALSE,
++ quote="")
+> tracks %>% nrow
+[1] 138135
+
+
+
+
+> names(tracks) <- c("thedate", "trackname", "artist", "album",
+"trackmbid", "artistmbid", "albummbid")
+> tracks
+
+
+
+
+
+> tracks[1, ]
+> tracks[1:3, ]
+> tracks[c(1, 1, 2), ]
+> tracks %>% tail(n=1)
+> tracks %>% slice(n())
+
+
+
+
+Manipulating rows
+
+
+> tracks %>% filter(artist=="Belle and Sebastian")
+> tracks %>% filter(artist=="Belle and Sebastian" | artist=="The Smiths")
+> tracks %>% filter(artist %in% c(“Belle and Sebastian", "The Smiths"))
+> tracks %>% filter(artist=="Belle and Sebastian" & trackname=="The Model")
+
+
+
+> tracks %>% arrange(artist)
+
+
+
+Selecting and renaming columns
+
+> # select trackname and artist
+> tracks %>% select(trackname, artist)
+# A tibble: 138,135 x 2
+trackname artist
+<chr> <chr>
+1 A Perfect Match A*Teens
+2 Mamma Mia A*Teens
+3 Upside Down A*Teens
+…
+# ... with 138,125 more rows
+>
+> # same thing using the standard-evaluation version
+> tracks %>% select_(“trackname”, “artist”)
+# A tibble: 138,135 x 2
+trackname artist
+<chr> <chr>
+1 A Perfect Match A*Teens
+2 Mamma Mia A*Teens
+3 Upside Down A*Teens
+…
+# ... with 138,125 more rows
+>
+> tracks %>% select(trackname)
+# A tibble: 138,135 x 1
+trackname
+<chr>
+1 A Perfect Match
+2 Mamma Mia
+3 Upside Down
+…
+# ... with 138,125 more rows
+> tracks %>% pull(trackname)
+[1] “A Perfect Match” “Mamma Mia” “Upside Down” …
+
+
+
+
+
+
+
+
+
+> tracks %>% select(thedate:album)
+# A tibble: 138,135 x 4
+thedate trackname artist album
+<int> <chr> <chr> <chr>
+1 1480053547 A Perfect Match A*Teens Greatest
+Hits
+2 1480024902 Mamma Mia A*Teens Greatest
+
+Hits
+3 1479933058 Upside Down A*Teens Greatest
+Hits
+…
+# ... with 138,125 more rows
+
+
+
+> # equivalent
+> tracks %>% select(-(trackmbid:albummbid))
+
+
+
+
+
+> tracks %>% select(-ends_with(“mbid”))
+# A tibble: 138,135 x 4
+thedate trackname artist album
+<int> <chr> <chr> <chr>
+1 1480053547 A Perfect Match A*Teens Greatest Hits
+2 1480024902 Mamma Mia A*Teens Greatest Hits
+3 1479933058 Upside Down A*Teens Greatest Hits
+
+
+
+
+
+
+> # this is commented out
+> # tracks <- tracks %>% select(-c(trackmbid, albummbid))
+
+
+
+
+
+
+
+
+
+> tracks %<>% select(-c(trackmbid, albummbid))
+
+
+
+
+> tracks %<>% rename(mbid=artistmbid)
+> tracks
+# A tibble: 138,135 x 5
+thedate trackname artist album
+mbid
+<int> <chr> <chr> <chr>
+<chr>
+1 1480053547 A Perfect Match A*Teens Greatest
+Hits 69d9cb53-5b8f-41b0-ac84-49eabe~
+2 1480024902 Mamma Mia A*Teens Greatest
+Hits 69d9cb53-5b8f-41b0-ac84-49eabe~
+3 1479933058 Upside Down A*Teens Greatest
+Hits 69d9cb53-5b8f-41b0-ac84-49eabe~
+...
+# ... with 138,125 more rows
+
+
+
+
+> tracks %>%
++ filter(artist=="Belle and Sebastian") %>%
++ select(artist, trackname)
+# A tibble: 5,557 x 2
+artist trackname
+<chr> <chr>
+1 Belle and Sebastian A Century Of Elvis
+2 Belle and Sebastian A Century Of Elvis
+3 Belle and Sebastian Dog On Wheels
+4 Belle and Sebastian Dog On Wheels
+...
+# ... with 5,547 more rows
+
+
+
+
+
+Computing on columns
+
+> library(anytime)
+> tracks %<>% mutate(thedate=anytime(thedate))
+> tracks
+# A tibble: 138,135 x 5
+thedate trackname artist
+album mbid
+<dttm> <chr> <chr>
+<chr> <chr>
+1 2016-11-25 00:59:07 A Perfect Match A*Teens
+Greatest Hits 69d9cb53-5b8f-41b0-ac~
+2 2016-11-24 17:01:42 Mamma Mia A*Teens
+Greatest Hits 69d9cb53-5b8f-41b0-ac~
+3 2016-11-23 15:30:58 Upside Down A*Teens
+Greatest Hits 69d9cb53-5b8f-41b0-ac~
+...
+# ... with 138,125 more rows
+
+
+
+
+
+> jan1 <- anytime("2016-1-01 00:00:01")
+> jan31 <- anytime("2016-1-31 23:59:59")
+>
+> tracks %>%
++ filter(thedate > jan1 & thedate < jan31) %>%
++ nrow
+[1] 895
+
+
+
+
+> library(lubridate)
+> tracks %<>% mutate(themonth=month(thedate, label=TRUE))
+>
+> tracks %>% pull(themonth) %>% table
+.
+Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+11875 10468 11400 9025 12743 13609 9439 9861 13509 13264 12175 10767
+
+
+
+
+> tracks %>% pull(artist) %>% n_distinct
+[1] 2202
+> tracks %>% pull(mbid) %>% n_distinct
+[1] 1960
+>
+> # these incantations are another way to do this
+> tracks %>% filter(!duplicated(artist)) %>% nrow
+[1] 2202
+> tracks %>% filter(!duplicated(mbid)) %>% nrow
+[1] 1960
+
+
+
+
+
+> tracks %>%
++ filter(artist=="Belle and Sebastian" & trackname=="The Model") %>%
++ select(artist, trackname, album) %>%
++ distinct(album)
+# A tibble: 4 x 1
+album
+<chr>
+1 Fold Your Hands Child, You Walk Like a Peasant
+2 Hollywood Bowl Live
+3 (2006.07.06) Hollywood Bowl
+4 NA
+
+
+
+
+
+
+
+Grouping in dplyr
+
+> tracks %>%
++ group_by(artist) %>%
++ summarise(N=n()) %>%
++ arrange(desc(N)) %>%
++ slice(1:10)
+# A tibble: 10 x 2
+artist N
+<chr> <int>
+1 Belle and Sebastian 5557
+2 The Smiths 4881
+3 The Magnetic Fields 4622
+4 P:ano 3888
+5 The Cure 3792
+6 Stars 3554
+7 Bad Religion 2977
+8 Elvis Costello 2908
+9 The Beatles 2461
+10 Radiohead 2198
+
+
+
+> tracks %>%
++ group_by(artist, album) %>%
++ summarise(N=n()) %>%
++ arrange(desc(N))
+# A tibble: 5,273 x 3
+# Groups: artist [2,202]
+artist album N
+<chr> <chr> <int>
+1 P:ano When It’s Dark And It’s Summer 2355
+2 The Magnetic Fields 69 Love Songs, Vol. 1 1336
+3 Elvis Costello Armed Forces 1037
+4 Bad Religion Stranger Than Fiction 955
+5 Wild Nothing Gemini 873
+6 Belle and Sebastian Push Barman to Open Old Wounds 840
+...
+# ... with 5,263 more rows
+
+
+
+
+
+
+
+
+
+
+> tracks %>%
++ group_by(artist, album) %>%
++ summarise(N=n()) %>%
++ group_by(artist) %>%
++ summarise(N=n()) %>%
++ arrange(desc(N))
+# A tibble: 2,202 x 2
+artist N
+<chr> <int>
+1 The Beatles 43
+2 Elvis Costello 36
+3 Radiohead 32
+4 The Smiths 32
+5 Guided by Voices 28
+6 R.E.M. 28
+7 Stars 28
+...
+# ... with 2,192 more rows
+
+
+
+
+
+
+
+
+
+> tracks %>%
++ mutate(year=year(thedate)) %>%
++ group_by(year, themonth) %>%
++ summarise(N=n()) %>%
++ group_by(year) %>%
++ summarise(mean_number_of_plays_per_month=mean(N))
+# A tibble: 9 x 2
+year mean_number_of_plays_per_month <dbl> <dbl>
+1 2008 1082
+2 2009 750
+3 2010 1551
+
+
+
+
+
+Joining data
+
+
+> # download the artist info
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+working-with-packages/data/artist-info.txt", "./artist-info.txt"
+> artistinfo <- read_delim("./artist-info.txt", delim="\t")
+>
+> tmp <- tracks %>% inner_join(artistinfo)
+Joining, by = “mbid”
+> tmp %>% nrow
+[1] 122241
+
+
+
+Reshaping data with tidyr
+
+
+> long <- tracks %>%
++ group_by(theyear=year(thedate), themonth) %>%
++ summarise(N=n())
+> long
+# A tibble: 107 x 3
+# Groups: theyear [?]
+theyear themonth N
+<dbl> <ord> <int>
+1 2008 Jan 877
+2 2008 Feb 984
+3 2008 Mar 1486
+4 2008 Apr 1101
+...
+# ... with 97 more rows
+
+
+
+> long %>% spread(themonth, N)
+# A tibble: 9 x 13
+# Groups: theyear [9]
+theyear Jan Feb Mar Apr May Jun Jul Aug Sep Oct ...
+* <dbl> <int> <int> <int> <int> <int> <int> <int> <int> <int> <int>
+1 2008 877 984 1486 1101 952 508 355 924 1244 1690
+2 2009 1145 1475 654 728 321 590 46 972 861 690
+3 2010 88 22 308 1016 2629 2518 885 356 3330 2671
+...
+
+
+
+
+> seasonstbl <- tibble(season=c(rep("spring", 3), rep("summer", 3),
++ rep("fall", 3), rep("winter", 3)),
++ themonth=c("Mar", "Apr", "May", "Jun", "Jul",
++ "Aug","Sep", "Oct", "Nov", "Dec",
++ "Jan", "Feb"))
+> longwithseason <- long %>%
++ full_join(seasonstbl) %>%
++ select(theyear, season, themonth, N)
+Joining, by = "themonth"
+>
+> longwithseason
+# A tibble: 107 x 4
+# Groups: theyear [9]
+theyear season themonth N <dbl> <chr> <chr> <int>
+1 2008 winter Jan 8772 2008 winter Feb 984
+3 2008 spring Mar 1486
+...
+# ... with 97 more rows
+
+
+
+
+
+
+
+> pivoted <- longwithseason %>%
++ group_by(theyear, season) %>%
++ summarise(thesum=sum(N)) %>%
++ spread(season, thesum)
+> pivoted
+# A tibble: 9 x 5
+# Groups: theyear [9]
+theyear fall spring summer winter
+* <dbl> <int> <int> <int> <int>
+1 2008 4807 3539 1787 2845
+2 2009 2421 1703 1608 3262
+3 2010 7899 3953 3759 2999
+4 2011 6367 3759 4179 6339
+5 2012 6576 7293 6255 5117
+6 2013 4710 3029 6492 4516
+7 2014 3812 4119 5197 4445
+8 2015 1749 4380 2837 2411
+9 2016 607 1393 795 1176
+
+
+
+
+> pivoted %>%
++ gather(season, N, fall, spring, summer, winter)
+theyear season N
+1 2008 fall 4807
+2 2009 fall 2421
+3 2010 fall 7899
+...
+10 2008 spring 3539
+11 2009 spring 1703
+12 2010 spring 3953
+...
+19 2008 summer 1787
+20 2009 summer 1608
+27 2016 summer 795
+...
+28 2008 winter 2845
+29 2009 winter 3262
+30 2010 winter 2999
+
+
+> pivoted %>%
++ gather(season, N, -theyear)
+# A tibble: 36 x 3
+# Groups: theyear [9]
+theyear season N
+<dbl> <chr> <int>
+1 2008 fall 4807
+2 2009 fall 2421
+...
+9 2016 fall 607
+10 2008 spring 3539
+# ... with 26 more rows
+
+
+
+
+
+
+
+
+
+

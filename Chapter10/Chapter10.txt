@@ -1,0 +1,187 @@
+Using k-NN in R
+
+# "class" is one of the packages that implement k-NN
+# "chemometrics" contains a function we need
+# "mlbench" holds the dataset
+install.packages(c("class", "mlbench", "chemometrics"))
+library(class)
+library(mlbench)
+data(PimaIndiansDiabetes)
+PID <- PimaIndiansDiabetes
+
+
+# we set the seed so that our splits are the same
+set.seed(3)
+ntrain <- round(nrow(PID)*4/5)
+train <- sample(1:nrow(PID), ntrain)
+training <- PID[train,]
+testing <- PID[-train,]
+
+
+
+resknn <- knnEval(scale(PID[,-9]), PID[,9], train, kfold=10,
+knnvec=seq(1,50,by=1),
+legpos="bottomright")
+
+
+
+
+predictions <- knn(scale(training[,-9]),
+scale(testing[,-9]),
+training[,9], k=27)
+# function to give correct classification rate
+accuracy <- function(predictions, answers){
+sum((predictions==answers)/(length(answers)))
+}
+accuracy(predictions, testing[,9])
+[1] 0.7597403
+
+
+
+
+
+table(test[,9], preds)
+preds
+neg pos
+neg 86 9
+pos 28 31
+
+
+
+
+
+
+Using logistic regression in R
+
+
+model <- glm(diabetes ~ ., data=PID, family=binomial(logit))
+
+
+
+
+
+summary(model)
+Call:
+glm(formula = diabetes ~ ., family = binomial(logit), data = PID)
+Deviance Residuals:
+Min 1Q Median 3Q Max
+-2.5566 -0.7274 -0.4159 0.7267 2.9297
+Coefficients:
+Estimate Std. Error z value Pr(>|z|)
+(Intercept) -8.4046964 0.7166359 -11.728 < 2e-16 ***
+pregnant 0.1231823 0.0320776 3.840 0.000123 ***
+glucose 0.0351637 0.0037087 9.481 < 2e-16 ***
+pressure -0.0132955 0.0052336 -2.540 0.011072 *
+
+
+
+
+
+predictions <- round(predict(model, type="response"))
+predictions <- ifelse(predictions == 1, "pos", "neg")
+accuracy(predictions, PID$diabetes)
+[1] 0.7825521
+
+
+
+
+
+set.seed(3)
+library(boot)
+cv.err <- cv.glm(PID, model, K=5)
+cv.err$delta[2]
+[1] 0.154716
+1 - cv.err$delta[2]
+[1] 0.845284
+
+
+
+
+
+
+predictions <- round(predict(model, type="response",
+newdata=test))
+predictions <- ifelse(predictions == 1, "pos", "neg")
+accuracy(predictions, test[,9]) # 78%
+[1] 0.7792208
+
+
+
+
+
+
+
+
+Decision trees
+
+library(tree)
+our.big.tree <- tree(diabetes ~ ., data=training)
+summary(our.big.tree)
+Classification tree:
+tree(formula = diabetes ~ ., data = training)
+Variables actually used in tree construction:
+[1] "glucose" "age" "mass" "pedigree" "triceps" "pregnant"
+[7] "insulin"
+Number of terminal nodes: 16
+
+
+Residual mean deviance: 0.7488 = 447.8 / 598
+Misclassification error rate: 0.184 = 113 / 614
+plot(our.big.tree)
+text(our.big.tree)
+
+
+
+
+
+
+
+
+set.seed(3)
+cv.results <- cv.tree(our.big.tree, FUN=prune.misclass)
+plot(cv.results$size, cv.results$dev, type="b")
+
+
+
+
+
+
+
+pruned.tree <- prune.misclass(our.big.tree, best=3)
+plot(pruned.tree)
+text(pruned.tree)
+# let's test its accuracy
+pruned.preds <- predict(pruned.tree, newdata=test, type="class")
+accuracy(pruned.preds, test[,9]) # 71%
+[1] 0.7077922
+
+
+
+
+
+
+
+Random forests
+
+library(randomForest)
+forest <- randomForest(diabetes ~ ., data=training,
+importance=TRUE,
+ntree=2000,
+mtry=5)
+accuracy(predict(forest), training[,9])
+[1] 0.7654723
+predictions <- predict(forest, newdata = test)
+accuracy(predictions, test[,9])
+[1] 0.7727273
+
+
+
+The circular decision boundary
+
+model <- glm(factor(dep.var) ~ ind.var1 +
+I(ind.var1^2) + ind.var2 + I(ind.var2^2),
+data=this, family=binomial(logit))
+
+
+
+

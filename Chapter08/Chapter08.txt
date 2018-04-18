@@ -1,0 +1,152 @@
+What's... uhhh... the deal with the bootstrap?
+
+
+> # setting seed will make random number generation reproducible
+> set.seed(1)
+> all.us.women <- rnorm(10000, mean=65, sd=3.5)
+> our.sample <- sample(all.us.women, 40)
+> bootstrap.replicates <- numeric(10000)
+> for(i in 1:10000){
++ a.sample <- sample(our.sample, 40, replace=TRUE)
++ bootstrap.replicates[i] <- mean(a.sample)
+> }
+> hist(bootstrap.replicates
+
+
+
+
+
+
+Performing the bootstrap in R (more elegantly)
+
+btobj <- boot(our.sample, function(x, i){mean(x[i])}, 10000,
+parallel="multicore", ncpus=3)
+
+
+
+
+
+
+
+plot(btobj)
+
+
+
+str(btobj)
+
+
+
+
+hist(btobj$t)
+
+
+
+
+Confidence intervals
+
+> quantile(btobj$t, prob=0.025)
+> quantile(btobj$t, prob=0.975)
+
+
+
+
+
+> boot.ci(btobj, conf=0.95, type="perc")
+BOOTSTRAP CONFIDENCE INTERVAL CALCULATIONS
+Based on 10000 bootstrap replicates
+CALL :
+boot.ci(boot.out = btobj, conf = 0.95, type = "perc")
+Intervals :
+Level Percentile
+95% (63.7, 65.8 )
+Calculations and Intervals on Original Scale
+
+
+
+
+
+
+
+> boot.ci(btobj, type="bca")
+BOOTSTRAP CONFIDENCE INTERVAL CALCULATIONS
+Based on 10000 bootstrap replicates
+CALL :
+boot.ci(boot.out = btobj, type = "bca")
+Intervals :
+Level BCa
+95% (63.67, 65.77 )
+Calculations and Intervals on Original Scale
+
+
+
+
+
+
+
+
+A one-sample test of means
+
+> t.test(precip, mu=38)
+One Sample t-test
+data: precip
+t = -1.901, df = 69, p-value = 0.06148
+alternative hypothesis: true mean is not equal to 38
+95 percent confidence interval:
+31.61748 38.15395
+sample estimates:
+mean of x
+34.88571
+
+
+
+
+
+
+> set.seed(1)
+> btobj <- boot(precip, function(x, i){mean(x[i])}, 300000)
+> boot.ci(btobj, type="bca")
+BOOTSTRAP CONFIDENCE INTERVAL CALCULATIONS
+Based on 300000 bootstrap replicates
+CALL :
+boot.ci(boot.out = btobj, type = "bca")
+Intervals :
+Level BCa
+95% (31.60, 37.98 )
+Calculations and Intervals on Original Scale
+
+
+
+
+
+
+
+
+Bootstrapping statistics other than the mean
+
+> set.seed(1)
+> law.salaries <- c(c(rnorm(70, mean=40000, sd=7000)), 500000, 400000,
+350000)
+
+
+
+
+
+
+> btobj.mean <- boot(law.salaries, function(x, i){mean(x[i])}, 300000)
+> btobj.median <- boot(law.salaries, function(x, i){median(x[i])}, 300000)
+> btobj.tmean <- boot(law.salaries, function(x, i){mean(x[i], trim=0.05)},
+300000)
+> boot.ci(btobj.mean, type="bca") # 44989 - 84084
+> boot.ci(btobj.median, type="bca") # 39607 - 42926
+> boot.ci(btobj.tmean, type="bca") # 39993 - 57715
+
+
+
+
+
+
+
+
+
+
+

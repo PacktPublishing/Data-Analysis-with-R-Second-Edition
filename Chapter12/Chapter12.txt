@@ -1,0 +1,725 @@
+Relational databases
+
+
+CREATE TABLE artists(
+artist_id INTEGER PRIMARY KEY,
+name TEXT,
+born_on INTEGER
+);
+CREATE TABLE paintings(
+painting_id INTEGER PRIMARY KEY,
+painting_artist INTEGER,
+painting_name TEXT,
+year_completed INTEGER,
+FOREIGN KEY(painting_artist) REFERENCES artists(artist_id)
+);
+INSERT INTO artists(name, born_on)
+VALUES ("Kay Sage", 1898),
+("Piet Mondrian", 1872),
+("Rene Magritte", 1898),
+("Man Ray", 1890),
+("Jean-Michel Basquiat", 1960);
+INSERT INTO paintings(painting_artist, painting_name, year_completed)
+VALUES (4, "Orquesta Sinfonica", 1916),
+(4, "La Fortune", 1938),
+(1, "Tommorow is Never", 1955),
+(1, "The Answer is No", 1958),
+(1, "No Passing", 1954),
+(5, "Bird on Money", 1981),
+(2, "Place de la Concorde", 1943),
+(2, "Composition No. 10", 1942),
+(3, "The Human Condition", 1935),
+(3, "The Treachery of Images", 1948),
+(3, "The Son of Man", 1964);
+
+
+
+
+
+
+
+SELECT * FROM artists;
+--------------------------------
+1 | Kay Sage | 1898
+2 | Piet Mondrian | 1872
+3 | Rene Magritte | 1898
+4 | Man Ray | 1890
+5 | Jean-Michel Basquiat | 1960
+
+
+
+
+
+
+
+SELECT * FROM paintings;
+--------------------------------------
+1 | 4 | Orquesta Sinfonica | 1916
+2 | 4 | La Fortune | 1938
+3 | 1 | Tommorow is Never | 1955
+4 | 1 | The Answer is No | 1958
+5 | 1 | No Passing | 1954
+6 | 5 | Bird on Money | 1981
+7 | 2 | Place de la Concorde | 1943
+8 | 2 | Composition No. 10 | 1942
+9 | 3 | The Human Condition | 1935
+10 | 3 | The Treachery of Images | 1948
+11 | 3 | The Son of Man | 1964
+
+
+
+
+
+
+
+library(DBI)
+library(RSQLite)
+# we read the art sqlite db from the current
+# working directory which can be get and set
+# with getwd() and setwd(), respectively
+art_db <- dbConnect(sqlite, "./art.db")
+
+
+
+
+
+result <- dbSendQuery(art_db,
+"SELECT paintings.painting_name, artists.name
+FROM paintings INNER JOIN artists
+ON paintings.painting_artist=artists.artist_id;")
+response <- fetch(result)
+head(response)
+dbClearResult(result)
+----------------------------------------------
+painting_name name
+1 Orquesta Sinfonica Man Ray
+2 La Fortune Man Ray
+3 Tommorow is Never Kay Sage
+4 The Answer is No Kay Sage
+5 No Passing Kay Sage
+
+
+
+
+
+
+result <- dbSendQuery(art_db,
+"SELECT paintings.year_completed, artists.born_on
+FROM paintings INNER JOIN artists
+ON paintings.painting_artist=artists.artist_id;")
+response <- fetch(result)
+head(response)
+dbClearResult(result)
+----------------------------
+year_completed born_on
+1 1916 1890
+2 1938 1890
+3 1955 1898
+4 1958 1898
+5 1954 1898
+6 1981 1960
+At this time, row-wise subtraction and averaging can be performed simply:
+mean(response$year_completed - response$born_on)
+-----------
+[1] 51.091
+
+
+
+
+
+
+
+
+dbDisconnect(art_db)
+
+
+
+
+
+
+
+
+Using JSON
+
+library(jsonlite)
+example.json <- '
+{
+"thebeatles": {
+"formed": 1960,
+"members": [
+{
+"firstname": "George",
+"lastname": "Harrison"
+},
+{
+"firstname": "Ringo",
+"lastname": "Starr"
+},
+{
+"firstname": "Paul",
+"lastname": "McCartney"
+},
+{
+"firstname": "John",
+"lastname": "Lennon"
+}
+]
+}
+}'
+the_beatles <- fromJSON(example.json)
+
+
+
+print(the_beatles)
+---------------------
+$thebeatles
+$thebeatles$formed
+[1] 1960
+$thebeatles$members
+firstname lastname
+1 George Harrison
+2 Ringo Starr
+3 Paul McCartney
+4 John Lennon
+
+
+
+
+
+
+
+the_beatles$thebeatles$formed
+the_beatles[["thebeatles"]][["formed"]]
+---------
+[1] 1960
+[1] 1960
+
+
+
+
+
+
+
+{
+"toptags": {
+"tag": [
+{
+"count": 100,
+"name": "female vocalists",
+"url": "http://www.last.fm/tag/female+vocalists"
+},
+{
+"count": 71,
+"name": "singer-songwriter",
+"url": "http://www.last.fm/tag/singer-songwriter"
+},
+{
+"count": 65,
+"name": "pop",
+"url": "http://www.last.fm/tag/pop"
+}
+]
+}
+}
+
+
+
+
+
+URLencode("The Beatles")
+-------
+[1] "The%20Beatles"
+
+
+
+
+create_artist_query_url_lfm <- function(artist_name){
+prefix <-
+"http://ws.audioscrobbler.com/2.0/?method=artist.gettoptags&artist="
+postfix <- "&api_key=c2e57923a25c03f3d8b317b3c8622b43&format=json"
+encoded_artist <- URLencode(artist_name)
+return(paste0(prefix, encoded_artist, postfix))
+}
+create_artist_query_url_lfm("Depeche Mode")
+--------------------
+[1]
+"http://ws.audioscrobbler.com/2.0/?method=artist.gettoptags&artist=Depeche%
+20Mode&api_key=c2e57923a25c03f3d8b317b3c8622b43&format=json"
+
+
+
+
+
+
+
+
+
+fromJSON(create_artist_query_url_lfm("Depeche Mode"))
+-----------------------------------------
+$toptags
+$toptags$tag
+count name url
+1 100 electronic http://www.last.fm/tag/electronic
+2 87 new wave http://www.last.fm/tag/new+wave
+3 59 80s http://www.last.fm/tag/80s
+4 56 synth pop http://www.last.fm/tag/synth+pop
+
+
+
+
+
+
+
+
+
+
+get_tag_vector_lfm <- function(an_artist){
+artist_url <- create_artist_query_url_lfm(an_artist)
+json <- fromJSON(artist_url)
+return(json$toptags$tag$name)
+}
+get_tag_vector_lfm("Depeche Mode")
+------------------------------------------
+[1] "electronic" "new wave" "80s"
+[4] "synth pop" "synthpop" "seen live"
+[7] "alternative" "rock" "british
+
+
+
+
+
+
+
+
+
+
+
+
+
+our_artists <- list("Kate Bush", "Peter Tosh", "Radiohead",
+"The Smiths", "The Cure", "Black Uhuru")
+our_artists_tags <- lapply(our_artists, get_tag_vector_lfm)
+names(our_artists_tags) <- our_artists
+print(our_artists_tags)
+--------------------------------------
+$`Kate Bush`
+[1] "female vocalists" "singer-songwriter" "pop"
+[4] "alternative" "80s" "british"
+........
+$`Peter Tosh`
+[1] "reggae" "roots reggae" "Rasta"
+[4] "roots" "ska" "jamaican"
+........
+$Radiohead
+[1] "alternative" "alternative rock"
+[3] "rock" "indie"
+
+........
+$`The Smiths`
+[1] "indie" "80s" "post-punk"
+[4] "new wave" "alternative" "rock"
+........
+$`The Cure`
+[1] "post-punk" "new wave" "alternative"
+[4] "80s" "rock" "seen live"
+........
+$`Black Uhuru`
+[1] "reggae" "roots reggae" "dub"
+[4] "jamaica" "roots" "jamaican"
+
+
+
+
+
+jaccard_index <- function(one, two){
+length(intersect(one, two))/length(union(one, two))
+}
+
+
+
+
+
+jaccard_index(our_artists_tags[["Radiohead"]],
+our_artists_tags[["The Cure"]])
+
+---------------
+[1] 0.3333
+
+
+
+
+
+
+similarity_matrix <- function(artist_list, similarity_fn) {
+num <- length(artist_list)
+# initialize a num by num matrix of zeroes
+sim_matrix <- matrix(0, ncol = num, nrow = num)
+# name the rows and columns for easy lookup
+rownames(sim_matrix) <- names(artist_list)
+colnames(sim_matrix) <- names(artist_list)
+# for each row in the matrix
+for(i in 1:nrow(sim_matrix)) {
+# and each column
+for(j in 1:ncol(sim_matrix)) {
+# calculate that pair's similarity
+the_index <- similarity_fn(artist_list[[i]],
+artist_list[[j]])
+# and store it in the right place in the matrix
+sim_matrix[i,j] <- round(the_index, 2)
+}
+}
+return(sim_matrix)
+}
+sim_matrix <- similarity_matrix(our_artists_tags, jaccard_index)
+print(sim_matrix)
+
+
+
+
+
+
+--------------------------------------------------------------
+Kate Bush Peter Tosh Radiohead The Smiths The Cure Black Uhuru
+Kate Bush 1.00 0.05 0.31 0.25 0.21 0.04
+Peter Tosh 0.05 1.00 0.02 0.03 0.03 0.33
+Radiohead 0.31 0.02 1.00 0.31 0.33 0.04
+The Smiths 0.25 0.03 0.31 1.00 0.44 0.05
+The Cure 0.21 0.03 0.33 0.44 1.00 0.05
+Black Uhuru 0.04 0.33 0.04 0.05 0.05 1.00
+
+
+
+
+
+
+
+
+
+
+
+
+# The Smiths are the fourth column
+sim_matrix[order(sim_matrix[,4], decreasing=TRUE), 4]
+----------------------------------------------
+The Smiths The Cure Radiohead Kate Bush Black Uhuru
+1.00 0.44 0.31 0.25 0.05
+Peter Tosh
+0.03
+
+
+
+
+
+
+XML
+
+
+example_xml1 <- '
+<the_beatles>
+<formed>1960</formed>
+<members>
+<member>
+<first_name>George</first_name>
+<last_name>Harrison</last_name>
+</member>
+<member>
+<first_name>Ringo</first_name>
+<last_name>Starr</last_name>
+</member>
+<member>
+<first_name>Paul</first_name>
+<last_name>McCartney</last_name>
+</member>
+<member>
+<first_name>John</first_name>
+<last_name>Lennon</last_name>
+</member>
+</members>
+</the_beatles>'
+
+
+
+
+
+
+library(XML)
+the_beatles <- xmlTreeParse(example_xml1)
+print(names(the_beatles))
+-------------------
+[1] "doc" "dtd"
+print(the_beatles$doc)
+---------------------
+$file
+[1] "<buffer>"
+$version
+[1] "1.0"
+$children
+$children$the_beatles
+<the_beatles>
+<formed>1960</formed>
+<members>
+<member>
+<first_name>George</first_name>
+<last_name>Harrison</last_name>
+</member>
+..........
+</members>
+</the_beatles>
+attr(,"class")
+[1] "XMLDocumentContent"
+
+
+
+
+
+
+
+
+
+
+
+
+print(xmlValue(the_beatles$doc$children$the_beatles[["formed"]]))
+----------------------
+[1] "1960"
+
+
+
+
+
+
+
+
+
+root <- xmlRoot(the_beatles)
+sapply(xmlChildren(root[["members"]]), function(x){
+xmlValue(x[["first_name"]])
+})
+-------------------------------------------
+member member member member
+"George" "Ringo" "Paul" "John"
+
+
+
+
+
+
+
+
+all_first_names <- "//member/first_name"
+
+
+
+
+
+the_beatles <- xmlParse(example_xml1)
+getNodeSet(the_beatles, all_first_names)
+--------
+[[1]]
+<first_name>George</first_name>
+[[2]]
+<first_name>Ringo</first_name>
+[[3]]
+<first_name>Paul</first_name>
+[[4]]
+<first_name>John</first_name>
+attr(,"class")
+[1] "XMLNodeSet"
+
+
+
+
+
+
+
+
+
+getNodeSet(the_beatles, "//first_name")
+getNodeSet(the_beatles, "/the_beatles/members/member/first_name")
+
+
+
+
+
+sapply(getNodeSet(the_beatles, all_first_names), xmlValue)
+-------------------------------
+[1] "George" "Ringo" "Paul" "John"
+
+
+example_xml2 <- '
+<the_beatles formed="1990">
+<members>
+<member first_name="George" last_name="Harrison"/>
+<member first_name="Richard" last_name="Starkey"/>
+<member first_name="Paul" last_name="McCartney"/>
+<member first_name="John" last_name="Lennon"/>
+</members>
+</the_beatles>'
+
+
+
+
+
+
+sapply(getNodeSet(the_beatles, "//member[@first_name]"),
+function(x){ xmlAttrs(x)[["first_name"]] })
+-----------
+[1] "George" "Richard" "Paul" "John"
+
+
+
+
+
+
+<metadata xmlns="http://musicbrainz.org/ns/mmd-2.0#">
+<artist-list>
+<artist>
+<name>Kate Bush</name>
+<tag-list>
+<tag count="1">
+<name>kent</name>
+</tag>
+<tag count="1">
+<name>english</name>
+</tag>
+<tag count="3">
+<name>british</name>
+</tag>
+</tag-list>
+</artist>
+<artist-list>
+</metadata>
+
+
+
+
+
+
+
+
+
+create_artist_query_url_mb <- function(artist){
+encoded_artist <- URLencode(artist)
+return(paste0("http://musicbrainz.org/ws/2/artist/?query=artist:",
+encoded_artist))
+}
+create_artist_query_url_mb("Depeche Mode")
+-------
+[1] "http://musicbrainz.org/ws/2/artist/?query=artist:Depeche%20Mode"
+
+
+
+
+
+ns <- "http://musicbrainz.org/ns/mmd-2.0#"
+names(ns)[1] <- "ns"
+
+
+
+
+
+
+get_tag_vector_mb <- function(an_artist, ns){
+artist_url <- create_artist_query_url_mb(an_artist)
+the_xml <- xmlParse(artist_url)
+xpath <- "//ns:artist[1]/ns:tag-list/ns:tag/ns:name"
+the_nodes <- getNodeSet(the_xml, xpath, ns)
+return(unlist(lapply(the_nodes, xmlValue)))
+}
+get_tag_vector_mb("Depeche Mode", ns)
+-------------------------------------
+[1] "electronica" "post punk" "alternative dance"
+[4] "electronic" "dark wave" "britannique"
+
+
+
+
+
+
+
+
+
+our_artists <- list("Kate Bush", "Peter Tosh", "Radiohead",
+"The Smiths", "The Cure", "Black Uhuru")
+our_artists_tags_mb <- lapply(our_artists, get_tag_vector_mb, ns)
+names(our_artists_tags_mb) <- our_artists
+sim_matrix <- similarity_matrix(our_artists_tags_mb, jaccard_index)
+print(sim_matrix)
+-------
+Kate Bush Peter Tosh Radiohead The Smiths The Cure Black Uhuru
+Kate Bush 1.00 0.00 0.24 0.27 0.24 0.00
+Peter Tosh 0.00 1.00 0.00 0.00 0.00 0.17
+Radiohead 0.24 0.00 1.00 0.23 0.23 0.00
+The Smiths 0.27 0.00 0.23 1.00 0.38 0.00
+The Cure 0.24 0.00 0.23 0.38 1.00 0.00
+Black Uhuru 0.00 0.17 0.00 0.00 0.00 1.00
+
+
+> sim_matrix[order(sim_matrix[,4], decreasing=TRUE), 4]
+-------------------------------
+The Smiths The Cure Kate Bush Radiohead Peter Tosh Black Uhuru
+1.00 0.38 0.27 0.23 0.00 0.00
+
+
+
+
+
+
+
+for(i in 1:length(our_artists_tags)){
+the_artist <- names(our_artists_tags)[i]
+# the_artist now holds the current artist's name
+combined_tags <- union(our_artists_tags[[the_artist]],
+our_artists_tags_mb[[the_artist]])
+our_artists_tags[[the_artist]] <- combined_tags
+}
+sim_matrix <- similarity_matrix(our_artists_tags, jaccard_index)
+print(sim_matrix)
+--------
+Kate Bush Peter Tosh Radiohead The Smiths The Cure Black Uhuru
+Kate Bush 1.00 0.04 0.29 0.24 0.19 0.03
+Peter Tosh 0.04 1.00 0.01 0.03 0.03 0.29
+Radiohead 0.29 0.01 1.00 0.29 0.30 0.03
+The Smiths 0.24 0.03 0.29 1.00 0.40 0.05
+The Cure 0.19 0.03 0.30 0.40 1.00 0.05
+Black Uhuru 0.03 0.29 0.03 0.05 0.05 1.00
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

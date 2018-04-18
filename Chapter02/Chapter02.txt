@@ -1,0 +1,176 @@
+Univariate data
+
+categorical.data <- c("heads", "tails", "tails", "heads")
+
+
+
+
+
+contin.data <- c(198.41, 178.46, 165.20, 141.71, 138.77)
+
+
+
+
+
+Frequency distributions
+
+head(mtcars)
+		  mpg 	cyl 	disp 	hp 	drat 	wt 	qsec 	vs 	am 	gear 	carb
+Mazda RX4 	  21.0 	6 	160 	110 	3.90 	2.620 	16.46 	0	 1 	 4	 4
+Mazda RX4 Wag     21.0 	6 	160 	110 	3.90 	2.875 	17.02 	0	 1	 4	 4
+Datsun 710 	  22.8 	4 	108 	93 	3.85 	2.320 	18.61 	1 	 1	 4	 1
+Hornet 4 Drive    21.4	6 	258 	110	3.08 	3.215 	19.44 	1 	 0 	 3	 1
+Hornet Sportabout 18.7 	8 	360 	175 	3.15 	3.440 	17.02 	0	 0 	 3	 2
+Valiant 	  18.1	6 	225 	105 	2.76 	3.460 	20.22 	1	 0 	 3	 1
+
+
+
+
+
+unique(mtcars$carb)
+[1] 4 1 2 3 6 8
+
+
+
+
+table(mtcars$carb)
+1 2 3 4 6 8
+7 10 3 10 1 1
+
+
+
+
+
+cut(airquality$Temp, 9)
+
+
+
+
+
+table(cut(airquality$Temp, 9))
+
+(56,60.6] (60.6,65.1] (65.1,69.7] (69.7,74.2] (74.2,78.8]
+	8 	  10 	      14 	16 	      26
+(78.8,83.3] (83.3,87.9] (87.9,92.4] (92.4,97]
+	35 	   22 		15 	    7
+
+
+
+
+Central tendency
+
+sum(nums)/length(nums) # nums would be a vector of numerics
+
+
+
+
+
+mean(c(1,2,3,4,5))
+[1] 3
+
+
+
+
+
+median(c(3, 7, 6, 10, 3, 7))
+[1] 6.5
+
+
+
+
+
+
+Spread
+
+sum(abs(x - mean(x))) / length(x)
+
+
+
+
+Probability distributions
+
+table(mtcars$carb) / length(mtcars$carb)
+      1       2       3       4       6       8
+0.21875 0.31250 0.09375 0.31250 0.03125 0.03125
+
+
+
+
+
+
+# don't worry about memorizing this
+temp.density <- density(airquality$Temp)
+pdf <- approxfun(temp.density$x, temp.density$y, rule=2)
+integrate(pdf, 80, 90)
+0.3422287 with absolute error < 7.5e-06
+
+
+
+
+
+
+Visualization methods
+
+qplot(column, data=dataframe, geom=...)
+
+
+
+
+library(ggplot2)
+qplot(factor(carb), data=mtcars, geom="bar")
+
+
+
+
+
+qplot(factor(carb),
+	data=mtcars,
+	geom="bar",
+	fill=factor(carb),
+	xlab="number of carburetors")
+
+
+
+
+
+
+qplot(Temp, data=airquality, geom="histogram")
+
+
+
+
+
+
+qplot(Temp, data=airquality, geom="histogram",
+binwidth=5, color=I("white"))
+
+
+
+
+
+
+
+qplot(Temp, data=airquality, geom="density")
+
+
+
+
+
+qplot(Temp, data=airquality, geom="density",
+	adjust=.5, # changes bandwidth
+	fill=I("pink"),
+	alpha=I(.5), # adds transparency
+	main="density plot of temperature data")
+
+
+
+
+
+
+
+
+
+
+
+
+

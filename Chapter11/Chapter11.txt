@@ -1,0 +1,473 @@
+
+Creating and plotting time series
+
+
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+forecasting/school-supplies.csv", "./school-supplies.csv")
+> school <- read.csv("./school-supplies.csv")
+> head(school)
+thedate hits
+1 2004-01 20
+2 2004-02 24
+3 2004-03 19
+4 2004-04 26
+5 2004-05 25
+6 2004-06 24
+> start(schoolts)
+[1] 2004 1
+> end(schoolts)
+[1] 2018 3
+
+> schoolts <- ts(school$hits, start=c(2004, 1), frequency=12)
+> schoolts
+Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+2004 20 24 19 26 25 24 55 88 32 26 20 19
+2005 27 24 22 19 24 22 57 82 34 21 19 19
+2006 22 21 19 17 21 24 61 77 29 18 16 14
+2007 22 16 17 18 21 25 56 86 27 18 16 14
+2008 19 16 16 16 19 20 55 79 24 16 14 12
+2009 16 16 15 13 15 19 54 85 24 14 15 11
+2010 17 15 13 13 15 18 49 78 23 13 11 10
+2011 15 12 11 11 12 17 53 79 22 12 12 10
+
+
+
+> library(ggplot2)
+> library(forecast)
+> autoplot(schoolts)
+
+
+
+
+
+>
+download.file("https://raw.githubusercontent.com/tonyfischetti/dawr/master/
+forecasting/yearly-land-air-temp.csv", "yearly-temp.csv")
+> yearlytemp <- read.csv("yearly-temp.csv")
+> head(yearlytemp)
+year val
+1 1880 -0.1900000
+2 1881 -0.1008333
+3 1882 -0.1108333
+4 1883 -0.1941667
+5 1884 -0.2966667
+6 1885 -0.3175000
+
+
+
+
+
+
+
+
+
+> tempts <- ts(yearlytemp$val, start=1880, frequency=1)
+> autoplot(tempts)
+
+
+
+
+
+> # set the seed for deterministic "randomness"
+> set.seed(2)
+> gausnoise <- rnorm(100, mean=100, sd=20)
+> head(gausnoise)
+[1] 82.06171 103.69698 131.75691 77.39249 98.39496 102.64841
+> gausts <- ts(gausnoise, start=1900, frequency=1)
+> autoplot(gausts)
+
+
+
+
+
+> autoplot(AirPassengers)
+
+
+
+
+
+
+> autoplot(schoolts) +
++ ylim(0, 200) +
++ ggtitle('google hits for "school supplies" since 2004') +
++ ggsave("school-supplies-fancy.png")
+Saving 7 x 6.43 in image
+
+
+
+
+
+Time series decomposition
+
+> schoolcomps <- decompose(schoolts)
+> autoplot(schoolcomps)
+
+
+
+
+
+> aircomps <- decompose(AirPassengers, type="multiplicative")
+> autoplot(aircomps)
+
+
+
+
+
+
+Autocorrelation
+
+Lag 0 8 6 7 5 3 0 9
+Lag 1 NA 8 6 7 5 3 0
+Lag 2 NA NA 8 6 7 5 3
+
+
+
+
+
+> ggAcf(schoolts)
+
+
+
+
+
+
+
+> Box.test(schoolts, type="Ljung-Box")
+Box-Ljung test
+data: schoolts
+X-squared = 39.472, df = 1, p-value = 0.0000000003328
+
+> Box.test(tempts, type="Ljung-Box")
+Box-Ljung test
+data: tempts
+X-squared = 121.71, df = 1, p-value < 2.2e-16
+>
+> Box.test(gausts, type="Ljung-Box")
+Box-Ljung test
+data: gausts
+X-squared = 0.36027, df = 1, p-value = 0.5484
+
+
+>
+> Box.test(AirPassengers, type="Ljung-Box")
+Box-Ljung test
+data: AirPassengers
+X-squared = 132.14, df = 1, p-value < 2.2e-16
+
+
+
+
+
+
+Smoothing
+
+> library(TTR)
+> sm5 <- SMA(gausnoise, n=5)
+> sm10 <- SMA(gausnoise, n=10)
+> sm15 <- SMA(gausnoise, n=15)
+> head(sm5, n=10)
+[1] NA NA NA NA 98.66061 102.77795 104.87037
+[8] 97.56020 110.01960 109.78546
+
+
+
+> se1 <- ses(gausts, alpha=.999)
+> se.66 <- ses(gausts, alpha=.666)
+> se.33 <- ses(gausts, alpha=.333)
+> se.1 <- ses(gausts, alpha=0.1)
+> se0 <- ses(gausts, alpha=0.001)
+> head(fitted(se.1))
+Time Series:
+Start = 1900
+End = 1905
+Frequency = 1
+[1] 102.9813 100.8894 101.1701 104.2288 101.5452 101.2301
+
+
+
+
+
+
+Simple exponential smoothing for forecasting
+
+> mfore <- meanf(gausts, h=20)
+> autoplot(mfore)
+
+
+
+
+
+> nfore <- naive(gausts, h=20)
+> sfore <- ses(gausts, h=20)
+> # we are setting PI to false to suppress
+> # plotting the prediction intervals
+> autoplot(gausts) +
++ ylim(0, 200) + xlim(1900, 2010) +
++ autolayer(mfore, PI=FALSE, series="mean") +
++ autolayer(nfore, PI=FALSE, series="naive") +
++ autolayer(sfore, PI=FALSE, series="ses")
+
+
+
+
+
+
+> summary(sfore)
+Forecast method: Simple exponential smoothing
+Model Information:Simple exponential smoothing
+Call:
+ses(y = gausts, h = 20)
+Smoothing parameters:
+alpha = 0.0001
+Initial states:
+l = 99.3055
+sigma: 23.0888
+AIC AICc BIC
+1094.386 1094.636 1102.202
+Error measures:
+ME RMSE MAE MPE MAPE MASE
+Training set 0.07145194 23.08877 19.04151 -5.942264 20.89301 0.7154352
+ACF1
+Training set -0.05912586
+Forecasts:
+Point Forecast Lo 80 Hi 80 Lo 95 Hi 95
+2000 99.3062 69.71675 128.8957 54.05305 144.5594
+2001 99.3062 69.71675 128.8957 54.05305 144.5594
+2002 99.3062 69.71675 128.8957 54.05305 144.5594
+....
+
+
+
+
+
+
+
+Accuracy assessment
+
+
+> checkresiduals(mfore)
+Ljung-Box test
+data: Residuals from Mean
+Q* = 12.702, df = 9, p-value = 0.1766
+Model df: 1. Total lags used: 10
+>
+> checkresiduals(nfore)
+Ljung-Box test
+data: Residuals from Naive method
+Q* = 58.18, df = 10, p-value = 0.000000007996
+Model df: 0. Total lags used: 10
+>
+> checkresiduals(sfore)
+Ljung-Box test
+data: Residuals from Simple exponential smoothing
+Q* = 12.701, df = 8, p-value = 0.1226
+Model df: 2. Total lags used: 10
+
+
+
+
+
+> train <- window(gausts, start=1900, end=1980)
+> nforetr <- naive(train, h=20)
+> mforetr <- meanf(train, h=20)
+> sforetr <- ses(train, h=20)
+
+
+
+
+
+> accuracy(nforetr, gausts)
+RMSE MAE
+Training set 33.41918 26.86576
+Test set 36.44798 33.16893
+>
+accuracy(mforetr, gausts)
+RMSE MAE
+Training set 22.41742 18.33581
+Test set 25.96117 22.84341
+>
+> accuracy(sforetr, gausts)
+RMSE MAE
+Training set 22.41900 18.34584
+Test set 26.00306 22.91065
+
+
+
+
+
+
+
+> tsCV(gausts, meanf, h=5)
+Time Series:
+Start = 1900
+End = 1999
+Frequency = 1
+[1] NA NA NA NA NA 20.5866966
+[7] 21.2797482 -10.6324936 40.9624573 -1.4363504 9.0277723 18.1906911
+
+
+
+
+
+
+ts_cv_rmse <- function(thets, thefun, h=5){
+resids <- tsCV(thets, thefun, h=h)
+return(sqrt(mean(resids^2, na.rm=TRUE)))
+}
+
+
+
+
+
+
+> ts_cv_rmse(gausts, naive)
+[1] 33.82626
+> ts_cv_rmse(gausts, meanf)
+[1] 23.75519
+> ts_cv_rmse(gausts, ses)
+[1] 24.00897
+
+
+
+
+
+Double exponential smoothing
+
+hwfr <- holt(tempts, h=50)
+autoplot(hwfr)
+
+
+
+
+
+> hwfrd <- holt(tempts, h=50, damped=TRUE)
+> autoplot(hwfrd)
+
+
+
+
+> checkresiduals(hwfr)
+Ljung-Box test
+data: Residuals from Holt's method
+Q* = 16.666, df = 6, p-value = 0.01059
+Model df: 4. Total lags used: 10
+>
+> checkresiduals(hwfrd)
+Ljung-Box test
+data: Residuals from Damped Holt's method
+Q* = 17.769, df = 5, p-value = 0.00325
+Model df: 5. Total lags used: 10
+
+
+
+
+
+
+> ts_cv_rmse(tempts, holt)
+[1] 0.1780076
+> # have to use an anonymous function in order to specify a damped trend
+> ts_cv_rmse(tempts, function(x, h) holt(x, damped=TRUE, h=h))
+[1] 0.1892179
+> ts_cv_rmse(tempts, meanf)
+[1] 0.3555613
+> ts_cv_rmse(tempts, naive)
+[1] 0.1631819
+
+
+
+
+
+
+
+Triple exponential smoothing
+
+
+> hwfore <- hw(schoolts, h=48, seasonal="additive")
+> autoplot(hwfore)
+
+
+ts_cv_rmse(schoolts, function(x, h) hw(x, seasonal="additive"))
+[1] 9.34646
+ts_cv_rmse(schoolts, snaive)
+[1] 3
+
+
+
+
+> hwfore <- hw(AirPassengers, h=48, seasonal="multiplicative")
+> # now let's compare the simpler approaches
+> snfore <- snaive(AirPassengers, h=48)
+> nfore <- naive(AirPassengers, h=48)
+> mfore <- meanf(AirPassengers, h=48)
+> ts_cv_rmse(AirPassengers, function(x, h) hw(x,
+seasonal="multiplicative"))
+[1] 22.33878
+> ts_cv_rmse(AirPassengers, snaive)
+[1] 35.9892
+> ts_cv_rmse(AirPassengers, naive)
+[1] 77.16156
+> ts_cv_rmse(AirPassengers, meanf)
+[1] 126.4193
+
+
+
+
+
+
+ETS and the state space model
+
+
+> etsobj <- ets(schoolts)
+> summary(etsobj)
+ETS(M,A,A)
+Call:
+ets(y = schoolts)
+Smoothing parameters:
+alpha = 0.0464
+beta = 0.0017
+gamma = 0.3957
+...
+AIC AICc BIC
+1107.799 1111.799 1161.207
+Training set error measures:
+ME RMSE MAE MPE MAPE MASE ACF1
+Training set 0.3560261 3.080813 1.879578 -0.146184 7.017015 0.9028789
+0.2787678
+>
+> etsfore <- forecast(etsobj, h=48)
+
+
+
+
+
+
+Interventions for improvement
+
+> etsobj <- ets(tempts)
+> summary(etsobj)
+ETS(A,N,N)
+Call:
+ets(y = tempts)
+...
+> autoplot(forecast(etsobj, h=50))
+
+
+
+
+
+> etsobj2 <- ets(window(tempts, start=1970))
+> summary(etsobj2)
+ETS(A,A,N)
+Call:
+ets(y = window(tempts, start = 1970))
+...
+> autoplot(forecast(etsobj2, h=50))
+
+
+
+
+
+
+
+
