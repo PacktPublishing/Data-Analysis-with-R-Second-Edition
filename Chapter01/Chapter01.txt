@@ -30,6 +30,8 @@ Arithmetic and assignment
 [1] 100
 > VAR / 2 # variable names are case-sensitive
 Error: object 'VAR' not found
+> var / 2  # correct reference
+[1] 5
 
 
 
